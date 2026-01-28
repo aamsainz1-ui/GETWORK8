@@ -14,7 +14,7 @@ let currentState = {
         requirePin: true,
         requirePhoto: true,
         requireGPS: true,
-        officeLocation: null,
+        officeLocations: [], // Changed from officeLocation: null
         lateThreshold: '09:00'
     },
     workMode: 'office',
@@ -864,6 +864,13 @@ function loadFromLocalStorage() {
 
             currentState.securitySettings.lateThreshold = currentState.securitySettings.lateThreshold || '09:00';
 
+            // Migrate officeLocation to officeLocations array if needed
+            if (loaded.securitySettings && loaded.securitySettings.officeLocation && !loaded.securitySettings.officeLocations) {
+                currentState.securitySettings.officeLocations = [loaded.securitySettings.officeLocation];
+            } else if (!currentState.securitySettings.officeLocations) {
+                currentState.securitySettings.officeLocations = [];
+            }
+
             // Initialize/Migrate employees list if not present in loaded state
             if (!currentState.employees || currentState.employees.length === 0) {
                 currentState.employees = [
@@ -956,14 +963,22 @@ function updateSecurityToggles() {
         ownerTools.style.display = (employee && employee.role === 'Owner') ? 'block' : 'none';
     }
 
-    // Update office location display
-    const officeLocationDisplay = document.getElementById('officeLocationDisplay');
-    if (officeLocationDisplay) {
-        const loc = currentState.securitySettings.officeLocation;
-        if (loc && loc.latitude && loc.longitude) {
-            officeLocationDisplay.textContent = `📍 ${loc.name || 'Office'} (${loc.latitude.toFixed(4)}, ${loc.longitude.toFixed(4)})`;
+    // Update office locations list
+    const locationsList = document.getElementById('officeLocationsList');
+    if (locationsList) {
+        const locations = currentState.securitySettings.officeLocations || [];
+        if (locations.length === 0) {
+            locationsList.innerHTML = '<p style="text-align:center; color:var(--text-light); font-size:0.75rem; margin-top:5px;">ยังไม่ได้ตั้งค่าตำแหน่ง</p>';
         } else {
-            officeLocationDisplay.textContent = 'ยังไม่ได้ตั้งค่า';
+            locationsList.innerHTML = locations.map((loc, index) => `
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px; background: var(--bg-card); border-radius: 6px; border: 1px solid var(--border-light);">
+                    <div style="overflow: hidden;">
+                        <span style="display: block; font-size: 0.8rem; font-weight: 700; color: var(--text-main); white-space: nowrap; text-overflow: ellipsis;">${loc.name}</span>
+                        <span style="display: block; font-size: 0.65rem; color: var(--text-muted);">${loc.latitude.toFixed(4)}, ${loc.longitude.toFixed(4)}</span>
+                    </div>
+                    <button onclick="deleteOfficeLocation(${index})" style="background: none; border: none; cursor: pointer; color: var(--danger-red); font-size: 0.8rem;">🗑️</button>
+                </div>
+            `).join('');
         }
     }
 }
@@ -2433,19 +2448,45 @@ function closeMapPicker() {
     document.getElementById('mapModal').classList.remove('show');
 }
 
+function deleteOfficeLocation(index) {
+    if (!confirm('ยืนยันการลบตำแหน่งนี้หรือไม่?')) return;
+    currentState.securitySettings.officeLocations.splice(index, 1);
+    saveToLocalStorage();
+    updateSecurityToggles();
+    window.toast.success('🗑️ ลบตำแหน่งเรียบร้อยแล้ว');
+}
+
 function savePinnedLocation() {
     const lat = parseFloat(document.getElementById('latDisplay').textContent);
     const lng = parseFloat(document.getElementById('lngDisplay').textContent);
+    const nameInput = document.getElementById('newLocationName');
+    const name = nameInput ? nameInput.value.trim() : 'Unnamed Location';
 
-    currentState.securitySettings.officeLocation = {
+    if (!name) {
+        window.toast.warning('⚠️ กรุณาระบุชื่อสถานที่');
+        return;
+    }
+
+    const newLoc = {
         latitude: lat,
         longitude: lng,
-        name: 'Pinned Location'
+        name: name
     };
+
+    if (!currentState.securitySettings.officeLocations) {
+        currentState.securitySettings.officeLocations = [];
+    }
+
+    currentState.securitySettings.officeLocations.push(newLoc);
     saveToLocalStorage();
+    updateSecurityToggles();
     closeMapPicker();
-    window.toast.success('✅ บันทึกพิกัดเป้าหมายใหม่เรียบร้อยแล้ว');
+
+    if (nameInput) nameInput.value = ''; // Clear input
+    window.toast.success(`✅ บันทึกตำแหน่ง "${name}" เรียบร้อยแล้ว`);
 }
+
+window.deleteOfficeLocation = deleteOfficeLocation;
 
 window.openMapPicker = openMapPicker;
 window.closeMapPicker = closeMapPicker;

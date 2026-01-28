@@ -410,13 +410,21 @@
                 <div class="owner-tool-group">
                     <label
                         style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 8px; color: var(--text-main);">
-                        📍 พิกัดสำนักงานหลัก
+                        📍 จัดการตำแหน่งที่ตั้ง (Multiple Locations)
                     </label>
-                    <button class="btn-confirm"
-                        style="width: 100%; background: var(--secondary-orange); font-weight: 600;"
-                        onclick="openMapPicker()">
-                        ปักหมุดตำแหน่งบนแผนที่ (Pin on Map)
-                    </button>
+                    <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                        <input type="text" id="newLocationName" class="form-input" style="flex: 1;"
+                            placeholder="ชื่อสถานที่ (เช่น สาขา 1)">
+                        <button class="btn-confirm"
+                            style="background: var(--secondary-orange); font-weight: 600; white-space: nowrap;"
+                            onclick="openMapPicker()">
+                            ➕ เพิ่มตำแหน่ง
+                        </button>
+                    </div>
+                    <div id="officeLocationsList"
+                        style="display: flex; flex-direction: column; gap: 8px; max-height: 150px; overflow-y: auto; padding: 5px; border: 1px solid var(--border-light); border-radius: 8px; background: var(--bg-body);">
+                        <!-- Locations list injected by JS -->
+                    </div>
                 </div>
 
                 <div class="owner-tool-group"

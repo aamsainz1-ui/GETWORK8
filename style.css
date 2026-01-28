@@ -47,45 +47,72 @@
 body:not(.dark-mode) .sidebar {
     background: #1E293B;
     /* Dark sidebar on Light mode */
-    color: #F8FAFC;
+    color: #FFFFFF !important;
 }
 
 body:not(.dark-mode) .sidebar .nav-item {
-    color: #CBD5E1;
+    color: rgba(255, 255, 255, 0.8) !important;
 }
 
 body:not(.dark-mode) .sidebar .nav-item:hover {
     background: rgba(255, 255, 255, 0.05);
-    color: #FFFFFF;
+    color: #FFFFFF !important;
 }
 
 body:not(.dark-mode) .sidebar .nav-item.active {
     background: var(--primary-blue);
-    color: #FFFFFF;
+    color: #FFFFFF !important;
 }
 
 body:not(.dark-mode) .sidebar .brand-text h2 {
-    color: #FFFFFF;
+    color: #FFFFFF !important;
 }
 
 body:not(.dark-mode) .sidebar .pro-badge {
     background: rgba(255, 255, 255, 0.1);
-    color: #CBD5E1;
+    color: #FFFFFF !important;
 }
 
+body:not(.dark-mode) .sidebar .sidebar-footer p {
+    color: rgba(255, 255, 255, 0.5) !important;
+}
+
+body:not(.dark-mode) .sidebar .sidebar-toggle {
+    color: #FFFFFF !important;
+}
+
+/* Dark Mode Sidebar (Inverted to Light) */
 .dark-mode .sidebar {
-    background: #FFFFFF;
+    background: #FFFFFF !important;
     /* Light sidebar on Dark mode */
     border-right: 1px solid #E2E8F0;
+    color: #0F172A !important;
 }
 
 .dark-mode .sidebar .nav-item {
-    color: #1E293B;
+    color: #334155 !important;
+    /* Dark Slate for readability */
 }
 
 .dark-mode .sidebar .nav-item.active {
     background: rgba(37, 99, 235, 0.1);
-    color: var(--primary-blue);
+    color: var(--primary-blue) !important;
+}
+
+.dark-mode .sidebar .brand-text h2 {
+    color: #0F172A !important;
+}
+
+.dark-mode .sidebar .sidebar-footer p {
+    color: #64748B !important;
+}
+
+.dark-mode .sidebar .sidebar-toggle {
+    color: #64748B !important;
+}
+
+.dark-mode .sidebar .nav-item span {
+    color: inherit;
 }
 
 

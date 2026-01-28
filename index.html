@@ -11,6 +11,9 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Kanit:wght@300;400;500;600&display=swap"
         rel="stylesheet">
+    <!-- Leaflet Map -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </head>
 
 <body>
@@ -385,8 +388,8 @@
                     As the system owner, you can override global restrictions and set the official business location.
                 </p>
                 <button class="btn-confirm" style="width: 100%; background: var(--secondary-orange);"
-                    onclick="setOfficeLocation()">
-                    📍 Set Current Location as "Official Office"
+                    onclick="openMapPicker()">
+                    📍 Set Office Location (Pin on Map)
                 </button>
             </div>
 
@@ -580,6 +583,25 @@
             </div>
             <div class="modal-buttons">
                 <button class="btn-cancel" onclick="closeMobileUserSelector()">ปิด</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Map Picker Modal -->
+    <div class="modal" id="mapModal">
+        <div class="modal-content map-modal-content">
+            <h3>📍 เลือกตำแหน่งที่ตั้งสำนักงาน</h3>
+            <p class="modal-subtitle">เลื่อนแผนที่เพื่อปักหมุดตำแหน่งพิกัดที่ถูกต้อง</p>
+            <div id="mapPickerContainer" class="map-picker-container"></div>
+            <div class="map-controls">
+                <div class="coords-display">
+                    <small>Latitude: <span id="latDisplay">0.0000</span></small>
+                    <small>Longitude: <span id="lngDisplay">0.0000</span></small>
+                </div>
+            </div>
+            <div class="modal-buttons">
+                <button class="btn-cancel" onclick="closeMapPicker()">ยกเลิก</button>
+                <button class="btn-confirm" onclick="savePinnedLocation()">📍 บันทึกตำแหน่งนี้</button>
             </div>
         </div>
     </div>

@@ -848,14 +848,14 @@ function loadFromLocalStorage() {
                 }
             };
 
-            // Initialize/Migrate employees list
-            if (!currentState.employees) {
+            // Initialize/Migrate employees list if not present in loaded state
+            if (!currentState.employees || currentState.employees.length === 0) {
                 currentState.employees = [
-                    { id: 'EMP-1001', name: 'สมชาย ใจดี', pin: '1234', dept: 'ฝ่ายผลิต', pos: 'หัวหน้างาน', role: 'Staff', status: 'Active' },
-                    { id: 'EMP-1002', name: 'สมหญิง รักงาน', pin: '1234', dept: 'บัญชี', pos: 'เจ้าหน้าที่', role: 'Staff', status: 'Active' },
-                    { id: 'EMP-1003', name: 'วิชัย มานะ', pin: '1234', dept: 'ไอที', pos: 'วิศวกร', role: 'Admin', status: 'Active' }
+                    { id: 'EMP-0001', name: 'System Owner', pin: '2626', dept: 'Executive', pos: 'Owner', role: 'Owner', status: 'Active' },
+                    { id: 'EMP-1001', name: 'พนักงาน ทดสอบ', pin: '1234', dept: 'IT', pos: 'Developer', role: 'Staff', status: 'Active' },
+                    { id: 'EMP-1002', name: 'เจ้าหน้าที่ การเงิน', pin: '0000', dept: 'Finance', pos: 'Accountant', role: 'Admin', status: 'Active' }
                 ];
-                currentState.lastEmployeeId = 1003;
+                currentState.lastEmployeeId = 1002; // Update last ID based on new defaults
             } else {
                 // Migration logic for existing simple schema
                 currentState.employees = currentState.employees.map((emp, idx) => {
@@ -879,14 +879,14 @@ function loadFromLocalStorage() {
         } catch (e) {
             console.error('Error loading from localStorage:', e);
         }
-        // Initialize default employees
+    } else {
+        // If no saved state, initialize with default employees
         currentState.employees = [
             { id: 'EMP-0001', name: 'System Owner', pin: '2626', dept: 'Executive', pos: 'Owner', role: 'Owner', status: 'Active' },
-            { id: 'EMP-1001', name: 'สมชาย ใจดี', pin: '1234', dept: 'ฝ่ายผลิต', pos: 'หัวหน้างาน', role: 'Staff', status: 'Active' },
-            { id: 'EMP-1002', name: 'สมหญิง รักงาน', pin: '1234', dept: 'บัญชี', pos: 'เจ้าหน้าที่', role: 'Staff', status: 'Active' },
-            { id: 'EMP-1003', name: 'วิชัย มานะ', pin: '1234', dept: 'ไอที', pos: 'วิศวกร', role: 'Admin', status: 'Active' }
+            { id: 'EMP-1001', name: 'พนักงาน ทดสอบ', pin: '1234', dept: 'IT', pos: 'Developer', role: 'Staff', status: 'Active' },
+            { id: 'EMP-1002', name: 'เจ้าหน้าที่ การเงิน', pin: '0000', dept: 'Finance', pos: 'Accountant', role: 'Admin', status: 'Active' }
         ];
-        currentState.lastEmployeeId = 1003;
+        currentState.lastEmployeeId = 1002;
     }
 
     // Ensure Owner account exists if not present (Migration)
@@ -894,8 +894,13 @@ function loadFromLocalStorage() {
         currentState.employees.unshift({
             id: 'EMP-0001', name: 'System Owner', pin: '2626', dept: 'Executive', pos: 'Owner', role: 'Owner', status: 'Active'
         });
-        saveToLocalStorage();
+        saveToLocalStorage(); // Save immediately after adding owner
     }
+
+    updateUI();
+    renderAttendanceTable();
+    updateNameDropdown();
+    applyTranslations(); // Assuming applyTranslations is a global function
 }
 
 // Settings Modal Functions
@@ -907,6 +912,7 @@ function showSettingsModal() {
     renderEmployeeList();
     updateSecurityToggles();
     renderAdminLeaveManagement();
+    initMapPicker(); // Initialize map picker when settings modal is shown
 }
 
 function closeSettingsModal() {
@@ -931,7 +937,82 @@ function updateSecurityToggles() {
         const employee = (currentState.employees || []).find(e => e.name === currentState.userName);
         ownerTools.style.display = (employee && employee.role === 'Owner') ? 'block' : 'none';
     }
+
+    // Update office location display
+    const officeLocationDisplay = document.getElementById('officeLocationDisplay');
+    if (officeLocationDisplay) {
+        const loc = currentState.securitySettings.officeLocation;
+        if (loc && loc.latitude && loc.longitude) {
+            officeLocationDisplay.textContent = `📍 ${loc.name || 'Office'} (${loc.latitude.toFixed(4)}, ${loc.longitude.toFixed(4)})`;
+        } else {
+            officeLocationDisplay.textContent = 'ยังไม่ได้ตั้งค่า';
+        }
+    }
 }
+
+// Map Picker for Office Location
+let mapPicker;
+let markerPicker;
+
+function initMapPicker() {
+    const mapContainer = document.getElementById('mapPicker');
+    if (!mapContainer) return;
+
+    // Ensure map is only initialized once
+    if (mapPicker) {
+        mapPicker.remove();
+    }
+
+    const initialLat = currentState.securitySettings.officeLocation?.latitude || 13.7563; // Bangkok default
+    const initialLng = currentState.securitySettings.officeLocation?.longitude || 100.5018;
+
+    mapPicker = L.map('mapPicker').setView([initialLat, initialLng], 13);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    }).addTo(mapPicker);
+
+    markerPicker = L.marker([initialLat, initialLng], { draggable: true }).addTo(mapPicker);
+
+    markerPicker.on('dragend', function (event) {
+        const latlng = markerPicker.getLatLng();
+        document.getElementById('mapPickerLat').value = latlng.lat.toFixed(6);
+        document.getElementById('mapPickerLng').value = latlng.lng.toFixed(6);
+    });
+
+    // Set initial values in input fields
+    document.getElementById('mapPickerLat').value = initialLat.toFixed(6);
+    document.getElementById('mapPickerLng').value = initialLng.toFixed(6);
+    document.getElementById('mapPickerName').value = currentState.securitySettings.officeLocation?.name || 'Main Office';
+
+    // Invalidate size to ensure map renders correctly after modal opens
+    setTimeout(() => {
+        mapPicker.invalidateSize();
+    }, 100);
+}
+
+function saveOfficeLocationFromPicker() {
+    if (!checkRoleAccess('Owner')) return;
+
+    const lat = parseFloat(document.getElementById('mapPickerLat').value);
+    const lng = parseFloat(document.getElementById('mapPickerLng').value);
+    const name = document.getElementById('mapPickerName').value.trim();
+
+    if (isNaN(lat) || isNaN(lng) || !name) {
+        window.toast.error('❌ กรุณากรอกข้อมูลพิกัดและชื่อให้ถูกต้อง');
+        return;
+    }
+
+    currentState.securitySettings.officeLocation = {
+        latitude: lat,
+        longitude: lng,
+        name: name
+    };
+    saveToLocalStorage();
+    updateSecurityToggles(); // Update display in settings
+    window.toast.success('✅ สำเร็จ! พิกัดสำนักงานถูกตั้งค่าเรียบร้อยแล้ว');
+}
+window.saveOfficeLocationFromPicker = saveOfficeLocationFromPicker;
 
 function setOfficeLocation() {
     if (!checkRoleAccess('Owner')) return;
@@ -942,9 +1023,10 @@ function setOfficeLocation() {
             currentState.securitySettings.officeLocation = {
                 latitude: pos.coords.latitude,
                 longitude: pos.coords.longitude,
-                name: 'Main Office'
+                name: 'Current Location' // Default name when using current GPS
             };
             saveToLocalStorage();
+            updateSecurityToggles(); // Update display in settings
             window.toast.success('✅ สำเร็จ! พิกัดสำนักงานถูกตั้งค่าเรียบร้อยแล้ว');
         }, err => {
             let msg = '❌ ไม่สามารถดึงพิกัดได้: ' + err.message;
@@ -2269,6 +2351,72 @@ function handleMobileUserSelect(name) {
 window.showMobileUserSelector = showMobileUserSelector;
 window.closeMobileUserSelector = closeMobileUserSelector;
 window.handleMobileUserSelect = handleMobileUserSelect;
+
+// Map Picker Logic
+let map = null;
+let pickerMarker = null;
+
+function openMapPicker() {
+    const modal = document.getElementById('mapModal');
+    modal.classList.add('show');
+
+    // Default center (Bangkok or saved location)
+    const lat = currentState.securitySettings.officeLocation?.latitude || 13.7563;
+    const lng = currentState.securitySettings.officeLocation?.longitude || 100.5018;
+
+    setTimeout(() => {
+        if (!map) {
+            map = L.map('mapPickerContainer').setView([lat, lng], 15);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap'
+            }).addTo(map);
+
+            pickerMarker = L.marker([lat, lng], { draggable: true }).addTo(map);
+
+            pickerMarker.on('dragend', function (e) {
+                const pos = pickerMarker.getLatLng();
+                updateMapCoords(pos.lat, pos.lng);
+            });
+
+            map.on('click', function (e) {
+                pickerMarker.setLatLng(e.latlng);
+                updateMapCoords(e.latlng.lat, e.latlng.lng);
+            });
+        } else {
+            map.setView([lat, lng], 15);
+            pickerMarker.setLatLng([lat, lng]);
+        }
+        updateMapCoords(lat, lng);
+        map.invalidateSize();
+    }, 400);
+}
+
+function updateMapCoords(lat, lng) {
+    document.getElementById('latDisplay').textContent = lat.toFixed(6);
+    document.getElementById('lngDisplay').textContent = lng.toFixed(6);
+}
+
+function closeMapPicker() {
+    document.getElementById('mapModal').classList.remove('show');
+}
+
+function savePinnedLocation() {
+    const lat = parseFloat(document.getElementById('latDisplay').textContent);
+    const lng = parseFloat(document.getElementById('lngDisplay').textContent);
+
+    currentState.securitySettings.officeLocation = {
+        latitude: lat,
+        longitude: lng,
+        name: 'Pinned Location'
+    };
+    saveToLocalStorage();
+    closeMapPicker();
+    window.toast.success('✅ บันทึกพิกัดเป้าหมายใหม่เรียบร้อยแล้ว');
+}
+
+window.openMapPicker = openMapPicker;
+window.closeMapPicker = closeMapPicker;
+window.savePinnedLocation = savePinnedLocation;
 
 
 

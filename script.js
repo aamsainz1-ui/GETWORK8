@@ -175,7 +175,7 @@ function handleNameChange(e) {
 // Check for file protocol (Geolocation doesn't work on file:// in modern browsers)
 function checkProtocol() {
     if (window.location.protocol === 'file:') {
-        alert('⚠️ Warning: ระบบ GPS จะไม่ทำงานหากรันผ่านไฟล์โดยตรง (file://)\nแนะนำให้ใช้งานผ่าน Local Server หรือ Deploy ขึ้นระบบ Hosting (HTTPS) เพื่อใช้งานฟีเจอร์ความปลอดภัยครับ');
+        window.toast.warning('⚠️ Warning: ระบบ GPS จะไม่ทำงานหากรันผ่านไฟล์โดยตรง');
     }
 }
 
@@ -239,7 +239,7 @@ function verifyPin() {
 
         // Continue to next security step
         if (currentState.securitySettings.requirePhoto) {
-            showWebcamModal();
+            startLivenessChallenge();
         } else if (currentState.securitySettings.requireGPS) {
             verifyGPS();
         } else {
@@ -263,7 +263,6 @@ function closeWebcamModal() {
     const modal = document.getElementById('webcamModal');
     modal.classList.remove('show');
     stopWebcam();
-    pendingAction = null;
 }
 
 async function startWebcam() {
@@ -938,7 +937,7 @@ function setOfficeLocation() {
     if (!checkRoleAccess('Owner')) return;
 
     if (navigator.geolocation) {
-        alert('🛰 กำลังค้นหาพิกัด... โปรดรอสักครู่และอนุญาตการเข้าถึงหากมีหน้าต่างเด้งขึ้นมา');
+        window.toast.info('🛰 กำลังค้นหาพิกัด... โปรดรอสักครู่');
         navigator.geolocation.getCurrentPosition(pos => {
             currentState.securitySettings.officeLocation = {
                 latitude: pos.coords.latitude,
@@ -946,16 +945,16 @@ function setOfficeLocation() {
                 name: 'Main Office'
             };
             saveToLocalStorage();
-            alert('✅ สำเร็จ! พิกัดสำนักงานถูกตั้งค่าเรียบร้อยแล้ว');
+            window.toast.success('✅ สำเร็จ! พิกัดสำนักงานถูกตั้งค่าเรียบร้อยแล้ว');
         }, err => {
             let msg = '❌ ไม่สามารถดึงพิกัดได้: ' + err.message;
             if (err.code === err.PERMISSION_DENIED) {
-                msg = '📍 คุณปฏิเสธการเข้าถึงพิกัดไว้\n\nวิธีแก้: คลิกที่รูปแม่กุญแจบน URL -> เปลี่ยน Location เป็น Allow -> แล้ว Refresh หน้าเว็บครับ';
+                msg = '📍 การเข้าถึงพิกัดถูกปฏิเสธ';
             }
-            alert(msg);
+            window.toast.error(msg);
         }, { enableHighAccuracy: true, timeout: 5000 });
     } else {
-        alert('❌ Browser does not support Geolocation');
+        window.toast.error('❌ Browser does not support Geolocation');
     }
 }
 window.setOfficeLocation = setOfficeLocation;
@@ -1933,20 +1932,27 @@ function renderFullTeamGrid() {
             r => r.userName === emp.name && !r.clockOut
         );
 
-        const currentTask = (currentState.attendanceRecords || []).find(
+        const activeSession = (currentState.attendanceRecords || []).find(
             r => r.userName === emp.name && !r.clockOut
-        )?.project || 'No Active Task';
+        );
+
+        const currentTask = activeSession?.project || 'Ready to Work';
+        const workStartTime = activeSession?.clockIn || '--:--';
 
         return `
-            <div class="team-board-card">
+            <div class="team-board-card ${isOnline ? 'card-online' : ''}">
                 <div class="card-status-dot ${isOnline ? 'online' : 'offline'}"></div>
-                <div class="card-avatar">${emp.role === 'Admin' ? '👨‍💼' : '🧑‍💻'}</div>
+                <div class="card-avatar">${emp.role === 'Owner' ? '👑' : (emp.role === 'Admin' ? '👨‍💼' : '🧑‍💻')}</div>
                 <div class="card-info">
+                    <span class="card-role-tag">${emp.role}</span>
                     <h4>${emp.name}</h4>
                     <span class="card-dept">${emp.dept} | ${emp.pos}</span>
-                    <div class="card-task">${isOnline ? '📍 ' + currentTask : '💤 Offline'}</div>
+                    <div class="card-task">
+                        <span class="task-label">${isOnline ? '� Active Now' : '💤 Offline'}</span>
+                        <p>${currentTask}</p>
+                        ${isOnline ? `<small class="start-time">Started at ${workStartTime}</small>` : ''}
+                    </div>
                 </div>
-                <div class="card-role-tag">${emp.role}</div>
             </div>
         `;
     }).join('');
@@ -1963,7 +1969,7 @@ async function startLivenessChallenge() {
     // Check if Face ID is registered
     const employee = (currentState.employees || []).find(e => e.name === currentState.userName);
     if (!employee || !employee.faceData) {
-        alert('⚠️ Error: Face ID not registered. Please register in Biometric Hub first.');
+        window.toast.warning('⚠️ Error: Face ID not registered. Please register in Biometric Hub first.');
         return;
     }
 
@@ -1975,7 +1981,7 @@ async function startLivenessChallenge() {
         video.srcObject = livenessStream;
         runAIHeuristics();
     } catch (err) {
-        alert('❌ Camera error');
+        window.toast.error('❌ Camera error');
         closeLivenessModal();
     }
 }
@@ -2019,7 +2025,7 @@ function runAIHeuristics() {
             } else {
                 text.textContent = '❌ Identity Mismatch!';
                 setTimeout(() => {
-                    alert('⚠️ Verification Failed: Face does not match registered biometric data.');
+                    window.toast.error('⚠️ Verification Failed: Face does not match registered data.');
                     closeLivenessModal();
                 }, 1500);
             }

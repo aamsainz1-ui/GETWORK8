@@ -78,6 +78,10 @@
                     <button class="lang-toggle" onclick="toggleLanguage()" title="Switch Language">
                         <span id="langText">TH</span>
                     </button>
+                    <!-- Mobile Identity Selector -->
+                    <button class="icon-btn mobile-only" onclick="showMobileUserSelector()" title="Select Identity">
+                        <span>🆔</span>
+                    </button>
                 </div>
             </header>
 
@@ -566,6 +570,21 @@
         </div>
     </div>
 
+    <!-- Mobile User Selector Modal -->
+    <div class="modal" id="mobileUserModal">
+        <div class="modal-content">
+            <h3>👤 เลือกบัญชีผู้ใช้งาน</h3>
+            <p class="modal-subtitle">กรุณาเลือกชื่อของคุณเพื่อเข้าสู่ระบบ</p>
+            <div class="mobile-user-list" id="mobileUserList">
+                <!-- User items injected by JS -->
+            </div>
+            <div class="modal-buttons">
+                <button class="btn-cancel" onclick="closeMobileUserSelector()">ปิด</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="toast.js"></script>
     <script src="script.js"></script>
 </body>
 

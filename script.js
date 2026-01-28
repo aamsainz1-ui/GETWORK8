@@ -185,7 +185,7 @@ checkProtocol();
 // Handle clock in/out action with security
 function handleClockAction(action) {
     if (!currentState.userName) {
-        alert('⚠️ กรุณาเลือกชื่อพนักงานก่อน');
+        window.toast.warning('⚠️ กรุณาเลือกชื่อพนักงานก่อน');
         return;
     }
 
@@ -246,7 +246,7 @@ function verifyPin() {
             executePendingAction();
         }
     } else {
-        alert('❌ รหัส PIN ไม่ถูกต้อง');
+        window.toast.error('❌ รหัส PIN ไม่ถูกต้อง');
         pinInput.value = '';
         pinInput.focus();
     }
@@ -275,7 +275,7 @@ async function startWebcam() {
         video.srcObject = webcamStream;
     } catch (error) {
         console.error('Error accessing webcam:', error);
-        alert('❌ ไม่สามารถเข้าถึงกล้องได้ กรุณาอนุญาตการใช้งานกล้อง');
+        window.toast.error('❌ ไม่สามารถเข้าถึงกล้องได้ กรุณาอนุญาตการใช้งานกล้อง');
         closeWebcamModal();
     }
 }
@@ -325,7 +325,7 @@ function capturePhoto() {
 // GPS Verification & Mock Geocoding
 async function verifyGPS() {
     if (!navigator.geolocation) {
-        alert('⚠️ เบรา้วเซอร์ไม่รองรับ GPS');
+        window.toast.warning('⚠️ เบรา้วเซอร์ไม่รองรับ GPS');
         executePendingAction();
         return;
     }
@@ -346,7 +346,7 @@ async function verifyGPS() {
         if (err.code === err.PERMISSION_DENIED) {
             msg = '📍 การเข้าถึงพิกัดถูกปฏิเสธ (GPS Blocked)\n\nวิธีแก้:\n1. กดที่ "รูปแม่กุญแจ" หรือไอคอนข้างแถบ URL\n2. ตั้งค่า Location ให้เป็น "Allow" (อนุญาต)\n3. รีเฟรชหน้าเว็บแล้วลองใหม่ครับ';
         }
-        alert(msg);
+        window.toast.error(msg);
         executePendingAction();
     });
 }
@@ -427,6 +427,7 @@ function clockIn() {
     currentState.pendingPhoto = null;
     currentState.pendingLocation = null;
     renderAttendanceTable();
+    window.toast.success(`✅ สวัสดีครับคุณ ${currentState.userName} เข้างานเรียบร้อย`);
 }
 
 // Clock out
@@ -463,6 +464,7 @@ function clockOut() {
     renderAttendanceTable();
     renderWeeklyChart(); // Phase 4: Update Analytics
     updateWorkLifeScore(); // Phase 4: Update Score
+    window.toast.info(`👋 เลิกงานแล้ว พักผ่อนให้เต็มที่นะครับคุณ ${currentState.userName}`);
 }
 
 // Handle break tracking (start/end toggle)
@@ -753,7 +755,7 @@ function renderAttendanceTable() {
 // Export to Excel
 function exportToExcel() {
     if (currentState.attendanceRecords.length === 0) {
-        alert('ไม่มีข้อมูลให้ส่งออก');
+        window.toast.warning('ไม่มีข้อมูลให้ส่งออก');
         return;
     }
 
@@ -1015,18 +1017,18 @@ function addEmployee() {
     const role = roleInput.value; // Roles: Staff, Admin, Owner
 
     if (!name) {
-        alert('⚠️ กรุณากรอกชื่อพนักงาน');
+        window.toast.warning('⚠️ กรุณากรอกชื่อพนักงาน');
         return;
     }
 
     if (!pin || pin.length !== 4 || !/^\d{4}$/.test(pin)) {
-        alert('⚠️ กรุณากรอก PIN 4 หลัก (ตัวเลขเท่านั้น)');
+        window.toast.warning('⚠️ กรุณากรอก PIN 4 หลัก (ตัวเลขเท่านั้น)');
         return;
     }
 
     // Check duplicate
     if (currentState.employees.some(emp => emp.name === name)) {
-        alert('⚠️ มีชื่อนี้อยู่แล้ว');
+        window.toast.warning('⚠️ มีชื่อนี้อยู่แล้ว');
         return;
     }
 
@@ -1052,7 +1054,7 @@ function addEmployee() {
     deptInput.value = '';
     posInput.value = '';
 
-    alert(`✅ เพิ่มพนักงาน ${name} สำเร็จ (ID: ${newEmp.id})`);
+    window.toast.success(`✅ เพิ่มพนักงาน ${name} สำเร็จ (ID: ${newEmp.id})`);
 }
 
 window.addEmployee = addEmployee;
@@ -1075,7 +1077,7 @@ function editEmployee(index) {
     if (emp.role === 'Owner') {
         const currentUser = (currentState.employees || []).find(e => e.name === currentState.userName);
         if (!currentUser || currentUser.role !== 'Owner') {
-            alert('❌ เฉพาะ Owner เท่านั้นที่สามารถแก้ไขบัญชีระดับ Owner ได้');
+            window.toast.error('❌ เฉพาะ Owner เท่านั้นที่สามารถแก้ไขบัญชีระดับ Owner ได้');
             return;
         }
     }
@@ -1097,9 +1099,9 @@ function editEmployee(index) {
             saveToLocalStorage();
             renderEmployeeList();
             updateNameDropdown();
-            alert('✅ แก้ไขสำเร็จ');
+            window.toast.success('✅ แก้ไขสำเร็จ');
         } else if (newPin !== null) {
-            alert('⚠️ PIN ต้องเป็นตัวเลข 4 หลักเท่านั้น');
+            window.toast.warning('⚠️ PIN ต้องเป็นตัวเลข 4 หลักเท่านั้น');
         }
     }
 }
@@ -1112,17 +1114,23 @@ function deleteEmployee(index) {
 
     // Protect Owner account
     if (emp.role === 'Owner') {
-        alert('❌ ไม่สามารถลบบัญชีระดับ Owner ได้');
+        window.toast.error('❌ ไม่สามารถลบบัญชีระดับ Owner ได้');
         return;
     }
 
-    if (confirm(`ต้องการลบ "${emp.name}" หรือไม่?\nแนะนำให้เปลี่ยนสถานะเป็น Inactive แทนเพื่อเก็บประวัติ`)) {
-        currentState.employees.splice(index, 1);
-        saveToLocalStorage();
-        renderEmployeeList();
-        updateNameDropdown();
-        alert('✅ ลบสำเร็จ');
-    }
+    window.confirmDialog.show({
+        title: 'ยืนยันการลบ',
+        message: `ต้องการลบ "${emp.name}" หรือไม่?\nแนะนำให้เปลี่ยนสถานะเป็น Inactive แทนเพื่อเก็บประวัติ`,
+        type: 'delete'
+    }).then(confirmed => {
+        if (confirmed) {
+            currentState.employees.splice(index, 1);
+            saveToLocalStorage();
+            renderEmployeeList();
+            updateNameDropdown();
+            window.toast.success('✅ ลบสำเร็จ');
+        }
+    });
 }
 
 window.deleteEmployee = deleteEmployee;
@@ -1245,12 +1253,19 @@ function applyFilters() {
 
 // Data Management
 function deleteRecord(id) {
-    if (confirm('⚠️ ต้องการลบบันทึกนี้ใช่หรือไม่?')) {
-        currentState.attendanceRecords = currentState.attendanceRecords.filter(r => r.id !== id);
-        saveToLocalStorage();
-        calculateStats();
-        applyFilters();
-    }
+    window.confirmDialog.show({
+        title: 'ยืนยันการลบ',
+        message: '⚠️ ต้องการลบบันทึกนี้ใช่หรือไม่?',
+        type: 'delete'
+    }).then(confirmed => {
+        if (confirmed) {
+            currentState.attendanceRecords = currentState.attendanceRecords.filter(r => r.id !== id);
+            saveToLocalStorage();
+            calculateStats();
+            applyFilters();
+            window.toast.success('ลบบันทึกเรียบร้อย');
+        }
+    });
 }
 
 function updateNote(id, note) {
@@ -1273,23 +1288,30 @@ function closeResetModal() {
 
 function confirmResetAll() {
     if (!checkRoleAccess('Owner')) {
-        alert('⛔ เฉพาะระดับ "Owner" เท่านั้นที่สามารถล้างระบบได้');
+        window.toast.error('⛔ เฉพาะระดับ "Owner" เท่านั้นที่สามารถล้างระบบได้');
         return;
     }
-    if (confirm('‼️ คำเตือนสุดท้าย: ข้อมูลการเข้างาน และ รายชื่อพนักงานทั้งหมด จะหายไปถาวร ยืนยันใช่หรือไม่?')) {
-        currentState.attendanceRecords = [];
-        currentState.employees = []; // Clear employees
-        currentState.lastEmployeeId = 1000; // Reset ID counter
+    window.confirmDialog.show({
+        title: 'ล้างข้อมูลทั้งหมด',
+        message: '‼️ คำเตือนสุดท้าย: ข้อมูลการเข้างาน และ รายชื่อพนักงานทั้งหมด จะหายไปถาวร ยืนยันใช่หรือไม่?',
+        type: 'danger',
+        confirmText: 'ลบทิ้งทั้งหมด'
+    }).then(confirmed => {
+        if (confirmed) {
+            currentState.attendanceRecords = [];
+            currentState.employees = []; // Clear employees
+            currentState.lastEmployeeId = 1000; // Reset ID counter
 
-        saveToLocalStorage();
-        calculateStats();
-        applyFilters();
-        renderEmployeeList(); // Re-render list
-        updateNameDropdown(); // Re-render dropdown
+            saveToLocalStorage();
+            calculateStats();
+            applyFilters();
+            renderEmployeeList(); // Re-render list
+            updateNameDropdown(); // Re-render dropdown
 
-        closeResetModal();
-        alert('✅ ล้างข้อมูลทั้งหมดเรียบร้อยแล้ว');
-    }
+            closeResetModal();
+            window.toast.success('✅ ล้างข้อมูลทั้งหมดเรียบร้อยแล้ว');
+        }
+    });
 }
 
 function exportToJSON() {
@@ -1438,20 +1460,26 @@ function handleRestore(event) {
     reader.onload = function (e) {
         try {
             const data = JSON.parse(e.target.result);
-            if (confirm('📂 ยืนยันการกู้คืนข้อมูล? ข้อมูลปัจจุบันบางส่วนอาจถูกเขียนทับ')) {
-                // Merge records and employees, avoiding duplicates by ID
-                const existingIds = new Set(currentState.attendanceRecords.map(r => r.id));
-                const newRecords = (data.attendanceRecords || []).filter(r => !existingIds.has(r.id));
+            window.confirmDialog.show({
+                title: 'กู้คืนข้อมูล',
+                message: '📂 ยืนยันการกู้คืนข้อมูล? ข้อมูลปัจจุบันบางส่วนอาจถูกเขียนทับ',
+                type: 'info'
+            }).then(confirmed => {
+                if (confirmed) {
+                    // Merge records and employees, avoiding duplicates by ID
+                    const existingIds = new Set(currentState.attendanceRecords.map(r => r.id));
+                    const newRecords = (data.attendanceRecords || []).filter(r => !existingIds.has(r.id));
 
-                currentState.attendanceRecords = [...newRecords, ...currentState.attendanceRecords];
-                if (data.employees) currentState.employees = data.employees;
+                    currentState.attendanceRecords = [...newRecords, ...currentState.attendanceRecords];
+                    if (data.employees) currentState.employees = data.employees;
 
-                saveToLocalStorage();
-                renderAttendanceTable();
-                alert('✅ กู้คืนข้อมูลสำเร็จแล้ว');
-            }
+                    saveToLocalStorage();
+                    renderAttendanceTable();
+                    window.toast.success('✅ กู้คืนข้อมูลสำเร็จแล้ว');
+                }
+            });
         } catch (err) {
-            alert('❌ ไฟล์ JSON ไม่ถูกต้อง');
+            window.toast.error('❌ ไฟล์ JSON ไม่ถูกต้อง');
         }
     };
     reader.readAsText(file);
@@ -1597,7 +1625,7 @@ window.scrollToHistory = scrollToHistory;
 // Biometric Hub Logic
 function showBiometricModal() {
     if (!currentState.userName) {
-        alert('⚠️ กรุณาเลือกชื่อพนักงานก่อน');
+        window.toast.warning('⚠️ กรุณาเลือกชื่อพนักงานก่อน');
         return;
     }
 
@@ -1638,16 +1666,22 @@ function closeBiometricModal() {
 }
 
 function resetFaceId() {
-    if (confirm('‼️ ยืนยันการรีเซ็ตข้อมูลใบหน้า? คุณจะต้องลงทะเบียนใบหน้าใหม่อีกครั้ง')) {
-        const employee = (currentState.employees || []).find(e => e.name === currentState.userName);
-        if (employee) {
-            employee.faceData = null;
-            employee.faceRegDate = null;
-            saveToLocalStorage();
-            showBiometricModal(); // Refresh UI
-            alert('✅ รีเซ็ตข้อมูลใบหน้าเรียบร้อยแล้ว');
+    window.confirmDialog.show({
+        title: 'ยืนยันการรีเซ็ต',
+        message: '‼️ ยืนยันการรีเซ็ตข้อมูลใบหน้า? คุณจะต้องลงทะเบียนใบหน้าใหม่อีกครั้ง',
+        type: 'warning'
+    }).then(confirmed => {
+        if (confirmed) {
+            const employee = (currentState.employees || []).find(e => e.name === currentState.userName);
+            if (employee) {
+                employee.faceData = null;
+                employee.faceRegDate = null;
+                saveToLocalStorage();
+                showBiometricModal(); // Refresh UI
+                window.toast.success('✅ รีเซ็ตข้อมูลใบหน้าเรียบร้อยแล้ว');
+            }
         }
-    }
+    });
 }
 
 let bioStream = null;
@@ -1665,7 +1699,7 @@ async function showBioRegisterModal() {
         video.srcObject = bioStream;
     } catch (error) {
         console.error('Error accessing webcam:', error);
-        alert('❌ ไม่สามารถเข้าถึงกล้องได้');
+        window.toast.error('❌ ไม่สามารถเข้าถึงกล้องได้');
         closeBioRegisterModal();
     }
 }
@@ -1694,7 +1728,7 @@ function registerFace() {
         employee.faceData = faceData;
         employee.faceRegDate = new Date().toLocaleDateString('th-TH');
         saveToLocalStorage();
-        alert('✅ ลงทะเบียนใบหน้าสำเร็จ!');
+        window.toast.success('✅ ลงทะเบียนใบหน้าสำเร็จ!');
         closeBioRegisterModal();
         showBiometricModal();
     }
@@ -1703,7 +1737,7 @@ function registerFace() {
 // Leave Request Hub Logic
 function showLeaveModal() {
     if (!currentState.userName) {
-        alert('⚠️ กรุณาเลือกชื่อพนักงานก่อน');
+        window.toast.warning('⚠️ กรุณาเลือกชื่อพนักงานก่อน');
         return;
     }
     document.getElementById('leaveModal').classList.add('show');
@@ -1751,7 +1785,7 @@ function submitLeaveRequest() {
     const reason = document.getElementById('leaveReason').value;
 
     if (!start || !end || !reason) {
-        alert('⚠️ กรุณากรอกข้อมูลให้ครบถ้วน');
+        window.toast.warning('⚠️ กรุณากรอกข้อมูลให้ครบถ้วน');
         return;
     }
 
@@ -1759,7 +1793,7 @@ function submitLeaveRequest() {
     const endDate = new Date(end);
 
     if (endDate < startDate) {
-        alert('⚠️ วันที่สิ้นสุดต้องอยู่หลังวันที่เริ่มต้น');
+        window.toast.warning('⚠️ วันที่สิ้นสุดต้องอยู่หลังวันที่เริ่มต้น');
         return;
     }
 
@@ -1788,7 +1822,7 @@ function submitLeaveRequest() {
     document.getElementById('leaveReason').value = '';
 
     renderLeaveHistory();
-    alert('🚀 ส่งคำขอลาเรียบร้อยแล้ว รอการอนุมัติ');
+    window.toast.success('🚀 ส่งคำขอลาเรียบร้อยแล้ว รอการอนุมัติ');
 }
 
 function renderLeaveHistory() {
@@ -1854,7 +1888,7 @@ function handleLeaveDecision(id, decision) {
         request.status = decision;
         saveToLocalStorage();
         renderAdminLeaveManagement();
-        alert(`Request marked as ${decision}`);
+        window.toast.info(`Request marked as ${decision}`);
     }
 }
 
@@ -2185,6 +2219,50 @@ window.handleNameChange = handleNameChange;
 window.capturePhoto = capturePhoto;
 window.closeWebcamModal = closeWebcamModal;
 window.closePinModal = closePinModal;
+
+// Mobile User Selection Logic
+function showMobileUserSelector() {
+    const modal = document.getElementById('mobileUserModal');
+    const list = document.getElementById('mobileUserList');
+
+    const activeEmployees = (currentState.employees || []).filter(e => e.status !== 'Inactive');
+
+    list.innerHTML = activeEmployees.map(emp => `
+        <div class="mobile-user-item ${currentState.userName === emp.name ? 'active' : ''}" 
+             onclick="handleMobileUserSelect('${emp.name}')">
+            <div class="member-avatar">${emp.role === 'Admin' ? '👨‍💼' : '🧑‍💻'}</div>
+            <div class="member-info">
+                <span class="member-name">${emp.name}</span>
+                <span class="member-dept">${emp.dept} | ${emp.pos}</span>
+            </div>
+            ${currentState.userName === emp.name ? '<span class="active-badge">✅</span>' : ''}
+        </div>
+    `).join('');
+
+    modal.classList.add('show');
+}
+
+function closeMobileUserSelector() {
+    document.getElementById('mobileUserModal').classList.remove('show');
+}
+
+function handleMobileUserSelect(name) {
+    currentState.userName = name;
+    loadUserState(name);
+
+    // Also update the main select if it exists
+    const mainSelect = document.getElementById('userName');
+    if (mainSelect) mainSelect.value = name;
+
+    saveToLocalStorage();
+    updateUI();
+    closeMobileUserSelector();
+    window.toast.success(`สวัสดีครับคุณ ${name}`);
+}
+
+window.showMobileUserSelector = showMobileUserSelector;
+window.closeMobileUserSelector = closeMobileUserSelector;
+window.handleMobileUserSelect = handleMobileUserSelect;
 
 
 

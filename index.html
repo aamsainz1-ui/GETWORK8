@@ -48,9 +48,9 @@
                     <span class="nav-icon">👤</span>
                     <span>Biometric Hub</span>
                 </a>
-                <a href="#" class="nav-item" onclick="scrollToHistory()">
+                <a href="#" class="nav-item" onclick="showMyHistoryModal()">
                     <span class="nav-icon">📝</span>
-                    <span>History</span>
+                    <span>My History</span>
                 </a>
                 <a href="#" class="nav-item" id="navAdmin" onclick="showSettingsModal()" style="display: none;">
                     <span class="nav-icon">⚙️</span>
@@ -202,6 +202,9 @@
                             <span class="subtitle">History of attendance logs</span>
                         </div>
                         <div class="history-filters">
+                            <button class="btn-filter-me" onclick="filterToMe()">
+                                👤 ประวัติของฉัน
+                            </button>
                             <select id="filterName" class="mini-select" onchange="applyFilters()">
                                 <option value="all">Everyone</option>
                             </select>
@@ -382,15 +385,81 @@
             </div>
 
             <div class="settings-section" id="ownerTools"
-                style="display: none; border: 1px dashed var(--secondary-orange); padding: 1rem; border-radius: 8px;">
-                <h4 style="color: var(--secondary-orange);">👑 Owner-Only: Advanced Settings</h4>
-                <p style="font-size: 0.8rem; margin-bottom: 1rem; color: var(--text-muted);">
-                    As the system owner, you can override global restrictions and set the official business location.
+                style="display: none; border: 1px dashed var(--secondary-orange); padding: 1.5rem; border-radius: 12px; background: rgba(249, 115, 22, 0.03);">
+                <h4 style="color: var(--secondary-orange); display: flex; align-items: center; gap: 8px;">
+                    <span>👑 Owner-Only: Advanced Settings</span>
+                </h4>
+                <p style="font-size: 0.8rem; margin-bottom: 1.5rem; color: var(--text-muted); line-height: 1.4;">
+                    ในฐานะเจ้าของระบบ คุณสามารถกำหนดค่าความปลอดภัยระดับสูงและเวลาเข้างานมาตรฐานของบริษัทได้
                 </p>
-                <button class="btn-confirm" style="width: 100%; background: var(--secondary-orange);"
-                    onclick="openMapPicker()">
-                    📍 Set Office Location (Pin on Map)
-                </button>
+
+                <div class="owner-tool-group" style="margin-bottom: 1.5rem;">
+                    <label
+                        style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 8px; color: var(--text-main);">
+                        ⏱️ กำหนดเวลาเข้างานสาย (Late Threshold)
+                    </label>
+                    <div style="display: flex; gap: 10px;">
+                        <input type="time" id="lateThresholdInput" class="form-input" style="flex: 1;">
+                        <button class="btn-confirm" onclick="saveLateThreshold()"
+                            style="background: var(--primary-blue); padding: 0 20px;">บันทึกเวลา</button>
+                    </div>
+                    <small style="color: var(--text-light); margin-top: 5px; display: block;">*
+                        ระบบจะมาร์คสถานะพนักงานว่า "สาย" หากเข้างานหลังจากเวลานี้</small>
+                </div>
+
+                <div class="owner-tool-group">
+                    <label
+                        style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 8px; color: var(--text-main);">
+                        📍 พิกัดสำนักงานหลัก
+                    </label>
+                    <button class="btn-confirm"
+                        style="width: 100%; background: var(--secondary-orange); font-weight: 600;"
+                        onclick="openMapPicker()">
+                        ปักหมุดตำแหน่งบนแผนที่ (Pin on Map)
+                    </button>
+                </div>
+
+                <div class="owner-tool-group"
+                    style="margin-top: 1.5rem; border-top: 1px solid var(--border-light); padding-top: 1.5rem;">
+                    <label
+                        style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 8px; color: var(--text-main);">
+                        📋 จัดการโควตาการลา (Leave Quotas)
+                    </label>
+                    <div style="display: flex; flex-direction: column; gap: 10px;">
+                        <select id="quotaEmployeeSelect" class="form-input" onchange="loadEmployeeQuota()">
+                            <option value="">เลือกพนักงานเพื่อกำหนดสิทธิ์...</option>
+                        </select>
+                        <div id="quotaInputs" style="display: none; grid-template-columns: 1fr 1fr 1fr; gap: 8px;">
+                            <div>
+                                <small style="font-size: 0.7rem; color: var(--text-muted);">พักร้อน</small>
+                                <input type="number" id="quotaVacation" class="form-input" placeholder="วัน" min="0">
+                            </div>
+                            <div>
+                                <small style="font-size: 0.7rem; color: var(--text-muted);">ลาป่วย</small>
+                                <input type="number" id="quotaSick" class="form-input" placeholder="วัน" min="0">
+                            </div>
+                            <div>
+                                <small style="font-size: 0.7rem; color: var(--text-muted);">ลากิจ</small>
+                                <input type="number" id="quotaPersonal" class="form-input" placeholder="วัน" min="0">
+                            </div>
+                        </div>
+                        <button id="saveQuotaBtn" class="btn-confirm" onclick="saveEmployeeQuota()"
+                            style="display: none; background: var(--success-green); width: 100%;">บันทึกโควตาการลา</button>
+                    </div>
+                </div>
+
+                <div class="owner-tool-group"
+                    style="margin-top: 1.5rem; border-top: 1px solid var(--border-light); padding-top: 1.5rem;">
+                    <label
+                        style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 8px; color: var(--text-main);">
+                        📊 รายงานและการส่งออก (Reporting)
+                    </label>
+                    <button class="btn-confirm"
+                        style="width: 100%; background: #1D4ED8; display: flex; align-items: center; justify-content: center; gap: 8px;"
+                        onclick="exportToExcel()">
+                        <span>📥</span> ส่งออกข้อมูลเป็น Excel (.xlsx)
+                    </button>
+                </div>
             </div>
 
             <!-- New Admin Leave Management -->
@@ -602,6 +671,54 @@
             <div class="modal-buttons">
                 <button class="btn-cancel" onclick="closeMapPicker()">ยกเลิก</button>
                 <button class="btn-confirm" onclick="savePinnedLocation()">📍 บันทึกตำแหน่งนี้</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- My History Modal -->
+    <div class="modal" id="myHistoryModal">
+        <div class="modal-content my-history-modal">
+            <div class="modal-header-pro">
+                <div class="header-info">
+                    <h3>📝 ประวัติการทำงานรายบุคคล</h3>
+                    <p class="modal-subtitle" id="myHistorySubtitle">สรุปรายการเข้า-ออกงานของคุณ</p>
+                </div>
+                <button class="close-modal-btn" onclick="closeMyHistoryModal()">✕</button>
+            </div>
+
+            <div class="my-history-stats">
+                <div class="history-stat-item">
+                    <span class="label">งานทั้งหมด</span>
+                    <span class="value" id="myTotalDays">0 วัน</span>
+                </div>
+                <div class="history-stat-item">
+                    <span class="label">รวมเวลาทำงาน</span>
+                    <span class="value" id="myTotalWorkHours">0 ชม.</span>
+                </div>
+                <div class="history-stat-item">
+                    <span class="label">คะแนนวินัย</span>
+                    <span class="value" id="myReliability">100%</span>
+                </div>
+            </div>
+
+            <div class="table-container-mini">
+                <table class="premium-table">
+                    <thead>
+                        <tr>
+                            <th>วันที่</th>
+                            <th>เวลาเข้า-ออก</th>
+                            <th>เวลาพัก</th>
+                            <th>สถานะ</th>
+                        </tr>
+                    </thead>
+                    <tbody id="myHistoryBody">
+                        <!-- History injected by JS -->
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="modal-footer-pro">
+                <button class="btn-confirm" onclick="closeMyHistoryModal()">ปิดหน้าต่าง</button>
             </div>
         </div>
     </div>

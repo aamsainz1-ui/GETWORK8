@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description"
+        content="GlobalWork Pro - Advanced Enterprise Workforce Management & Biometric Attendance System">
+    <title>GlobalWork Pro | Enterprise Attendance & HR Hub</title>
+    <link rel="stylesheet" href="style.css">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Kanit:wght@300;400;500;600&display=swap"
+        rel="stylesheet">
+</head>
+
+<body>
+    <div class="app-container">
+        <!-- 1. Navigation Sidebar -->
+        <aside class="sidebar">
+            <div class="brand">
+                <div class="brand-logo" onclick="toggleSidebar()">🕒</div>
+                <div class="brand-text">
+                    <h2>GlobalWork</h2>
+                    <span class="pro-badge">PRO EDITION</span>
+                </div>
+                <button class="sidebar-toggle" onclick="toggleSidebar()" id="sidebarToggleBtn">
+                    <span class="toggle-icon">☰</span>
+                </button>
+            </div>
+
+            <nav class="nav-menu">
+                <a href="#" class="nav-item active" id="navDashboard">
+                    <span class="nav-icon">📊</span>
+                    <span>Dashboard</span>
+                </a>
+                <a href="#" class="nav-item" id="navTeam" onclick="showTeamBoardModal()">
+                    <span class="nav-icon">👥</span>
+                    <span>Team Board</span>
+                </a>
+                <a href="#" class="nav-item" id="navLeave" onclick="showLeaveModal()">
+                    <span class="nav-icon">📅</span>
+                    <span>Leave Request</span>
+                </a>
+                <a href="#" class="nav-item" onclick="showBiometricModal()">
+                    <span class="nav-icon">👤</span>
+                    <span>Biometric Hub</span>
+                </a>
+                <a href="#" class="nav-item" onclick="scrollToHistory()">
+                    <span class="nav-icon">📝</span>
+                    <span>History</span>
+                </a>
+                <a href="#" class="nav-item" id="navAdmin" onclick="showSettingsModal()" style="display: none;">
+                    <span class="nav-icon">⚙️</span>
+                    <span>Admin Hub</span>
+                </a>
+            </nav>
+
+            <div class="sidebar-footer">
+                <p>&copy; 2026 GlobalWork Pro</p>
+                <p class="version" data-i18n="versionText">v2.5.0 Enterprise Edition</p>
+            </div>
+        </aside>
+
+        <!-- 2. Main Work Stage -->
+        <main class="main-stage">
+            <header class="top-bar">
+                <div class="breadcrumbs">
+                    <span class="location-badge" id="locationBadge">🏢 Corporate Office</span>
+                </div>
+                <div class="top-actions">
+                    <button class="icon-btn theme-toggle" id="themeToggle" onclick="toggleTheme()" title="Switch Theme">
+                        <span class="theme-icon">🌙</span>
+                    </button>
+                    <div class="user-pill-display">
+                        <div class="avatar-small">👤</div>
+                        <span id="headerUserName">Select User...</span>
+                    </div>
+                    <button class="lang-toggle" onclick="toggleLanguage()" title="Switch Language">
+                        <span id="langText">TH</span>
+                    </button>
+                </div>
+            </header>
+
+            <div class="content-wrapper">
+                <!-- Clock Card -->
+                <section class="clock-card-pro glass-panel">
+                    <div class="clock-display">
+                        <h1 id="currentTime">00:00:00</h1>
+                        <p id="currentDate">Monday, 26 January 2026</p>
+                    </div>
+
+                    <div class="shift-timer-badge">
+                        <span>Work Shift:</span>
+                        <span id="shiftTimer">00:00:00</span>
+                    </div>
+
+                    <!-- Work Context Controls -->
+                    <div class="context-controls">
+                        <div class="work-mode-toggle">
+                            <button class="mode-btn active" id="modeOffice" onclick="setWorkMode('office')">🏢
+                                Office</button>
+                            <button class="mode-btn" id="modeRemote" onclick="setWorkMode('remote')">🏠 Remote</button>
+                        </div>
+                        <input type="text" id="projectInput" class="project-input"
+                            placeholder="ระบุโปรเจกต์ที่กำลังทำ... (Project / Task)">
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="action-buttons-pro">
+                        <button class="action-btn start-work" id="clockInBtn" onclick="handleClockAction('clockIn')">
+                            <div class="action-content">
+                                <span class="action-icon">▶️</span>
+                                <div class="action-text">
+                                    <h3>Start Work</h3>
+                                    <span>ลงเวลาเข้างาน</span>
+                                </div>
+                            </div>
+                        </button>
+                        <button class="action-btn end-work" id="clockOutBtn" onclick="handleClockAction('clockOut')"
+                            disabled>
+                            <div class="action-content">
+                                <span class="action-icon">⏹️</span>
+                                <div class="action-text">
+                                    <h3>Stop Work</h3>
+                                    <span>ลงเวลาออกงาน</span>
+                                </div>
+                            </div>
+                        </button>
+                    </div>
+                </section>
+
+                <!-- Stats Row -->
+                <div class="stats-grid-pro">
+                    <div class="mini-stat-card">
+                        <div class="icon-box blue">⏱️</div>
+                        <div class="stat-text">
+                            <span class="label">Today's Work</span>
+                            <span class="value" id="todayWorkTime">0h 0m</span>
+                        </div>
+                    </div>
+                    <div class="mini-stat-card">
+                        <div class="icon-box orange">☕</div>
+                        <div class="stat-text">
+                            <span class="label">Total Break</span>
+                            <span class="value" id="todayBreakTime">0m</span>
+                        </div>
+                    </div>
+                    <div class="mini-stat-card">
+                        <div class="icon-box purple">📈</div>
+                        <div class="stat-text">
+                            <span class="label" data-i18n="balanceScore">Balance Score</span>
+                            <span class="value" id="balanceScoreValue">98%</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Break Controls -->
+                <div class="break-controls-pro">
+                    <button class="break-pill" id="restroomBtn" onclick="handleBreak('restroom')" disabled>
+                        🚽 Restroom
+                    </button>
+                    <button class="break-pill" id="restBtn" onclick="handleBreak('rest')" disabled>
+                        ☕ Coffee Break
+                    </button>
+                </div>
+
+                </section>
+
+                <!-- Phase 4: Weekly Analytics -->
+                <section class="analytics-section glass-panel">
+                    <div class="section-header">
+                        <div class="header-main">
+                            <h3 data-i18n="weeklyAnalytics">Weekly Attendance Analytics</h3>
+                            <span class="subtitle" data-i18n="workHoursTrend">Work hours trend (Last 7 Days)</span>
+                        </div>
+                    </div>
+                    <div class="chart-container">
+                        <div class="y-axis">
+                            <span>12h</span><span>8h</span><span>4h</span><span>0h</span>
+                        </div>
+                        <div class="bars-wrapper" id="workChart">
+                            <!-- Bars injected by JS -->
+                        </div>
+                    </div>
+                    <div class="chart-labels" id="chartLabels">
+                        <!-- Dates injected by JS -->
+                    </div>
+                </section>
+
+                <!-- History Table (Condensed) -->
+                <section class="history-preview glass-panel" id="historySection">
+                    <div class="section-header">
+                        <div class="header-main">
+                            <h3>Recent Activity</h3>
+                            <span class="subtitle">History of attendance logs</span>
+                        </div>
+                        <div class="history-filters">
+                            <select id="filterName" class="mini-select" onchange="applyFilters()">
+                                <option value="all">Everyone</option>
+                            </select>
+                            <select id="filterDate" class="mini-select" onchange="applyFilters()">
+                                <option value="all">All Time</option>
+                                <option value="today">Today</option>
+                                <option value="week">This Week</option>
+                                <option value="month">This Month</option>
+                            </select>
+                            <div class="search-box-mini">
+                                <input type="text" id="searchQuery" class="mini-search" placeholder="Search..."
+                                    oninput="applyFilters()">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="table-responsive">
+                        <table id="attendanceTable">
+                            <thead>
+                                <tr>
+                                    <th>Employee</th>
+                                    <th>Date</th>
+                                    <th>In / Out</th>
+                                    <th>Breaks (WC/Rest)</th>
+                                    <th>Project / Notes</th>
+                                    <th>Duration</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="attendanceBody">
+                                <!-- Data rows -->
+                            </tbody>
+                        </table>
+                        <div class="empty-state" id="emptyState" style="display:none;">No records found</div>
+                    </div>
+                </section>
+            </div>
+        </main>
+
+        <!-- 3. Right Status Hub -->
+        <aside class="status-hub">
+            <!-- User Profile Widget -->
+            <div class="user-widget glass-panel">
+                <div class="profile-header-new">
+                    <div class="profile-avatar-large">👨‍💼</div>
+                    <div class="profile-info-new">
+                        <select id="userName" class="profile-select-pro">
+                            <option value="">Select Identity...</option>
+                            <!-- Options populated by JS -->
+                        </select>
+                        <span class="role-badge" id="userRoleDisplay">Employee</span>
+                    </div>
+                </div>
+                <div class="status-indicator-box">
+                    <div class="status-dot-large" id="statusBadge"></div>
+                    <span id="statusText">Ready to Work</span>
+                </div>
+            </div>
+
+            <!-- Team Status Widget -->
+            <div class="team-widget glass-panel">
+                <div class="widget-header">
+                    <h3>Team Status</h3>
+                    <span class="live-badge">● Live</span>
+                </div>
+                <div class="team-list" id="teamList">
+                    <!-- Team members injected here -->
+                    <div class="team-member-item">
+                        <div class="member-avatar">👩‍💻</div>
+                        <div class="member-info">
+                            <span class="member-name">Sarah Connor</span>
+                            <span class="member-dept">Design</span>
+                        </div>
+                        <span class="member-status online"></span>
+                    </div>
+                    <div class="team-member-item">
+                        <div class="member-avatar">👨‍💻</div>
+                        <div class="member-info">
+                            <span class="member-name">John Doe</span>
+                            <span class="member-dept">Engineering</span>
+                        </div>
+                        <span class="member-status offline"></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Announcements -->
+            <div class="announcement-widget glass-panel">
+                <div class="widget-header">
+                    <h3 data-i18n="announcements">Announcements</h3>
+                </div>
+                <div class="news-item">
+                    <span class="news-tag policy">Policy</span>
+                    <p>New WFH policy effective next week. Please check email.</p>
+                </div>
+                <div class="news-item">
+                    <span class="news-tag event">Event</span>
+                    <p>Town Hall meeting on Friday, 10:00 AM.</p>
+                </div>
+            </div>
+        </aside>
+    </div>
+
+    <!-- Modals (Hidden) -->
+    <!-- PIN Modal -->
+    <div class="modal" id="pinModal">
+        <div class="modal-content">
+            <h3>🔐 ใส่รหัส PIN</h3>
+            <p class="modal-subtitle">กรุณาใส่รหัส PIN 4 หลักของคุณ</p>
+            <input type="password" id="pinInput" class="pin-input" maxlength="4" placeholder="••••" autocomplete="off">
+            <div class="modal-buttons">
+                <button class="btn-cancel" onclick="closePinModal()">ยกเลิก</button>
+                <button class="btn-confirm" onclick="verifyPin()">ตกลง</button>
+            </div>
+            <p class="pin-hint">💡 รหัส PIN เริ่มต้น: 1234</p>
+        </div>
+    </div>
+
+    <!-- Webcam Modal -->
+    <div class="modal" id="webcamModal">
+        <div class="modal-content webcam-modal">
+            <h3>📸 ถ่ายรูปยืนยันตัวตน</h3>
+            <div class="webcam-container">
+                <video id="webcam" autoplay playsinline></video>
+                <canvas id="canvas" style="display:none;"></canvas>
+            </div>
+            <div class="modal-buttons">
+                <button class="btn-cancel" onclick="closeWebcamModal()">ยกเลิก</button>
+                <button class="btn-confirm" onclick="capturePhoto()">📸 ถ่ายรูป</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div class="modal" id="settingsModal">
+        <div class="modal-content settings-modal">
+            <h3>⚙️ Admin Hub</h3>
+
+            <div class="settings-section">
+                <h4>👥 Employee Management</h4>
+                <div class="employee-list" id="employeeList"></div>
+                <div class="add-employee-form">
+                    <div class="form-row">
+                        <input type="text" id="newEmployeeName" class="form-input" placeholder="Name..." maxlength="50">
+                        <input type="password" id="newEmployeePin" class="form-input" placeholder="PIN (4 digits)"
+                            maxlength="4">
+                    </div>
+                    <div class="form-row">
+                        <input type="text" id="newEmployeeDept" class="form-input" placeholder="Dept (IT, HR)..."
+                            maxlength="30">
+                        <input type="text" id="newEmployeePos" class="form-input" placeholder="Position..."
+                            maxlength="30">
+                    </div>
+                    <div class="form-row">
+                        <select id="newEmployeeRole" class="form-input">
+                            <option value="Staff">Staff</option>
+                            <option value="Admin">Admin</option>
+                            <option value="Owner">Owner</option>
+                        </select>
+                        <button class="btn-add" onclick="addEmployee()">➕ Add User</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="settings-section">
+                <h4>🔐 Security Rules</h4>
+                <label class="checkbox-label">
+                    <input type="checkbox" id="requirePinCheck" onchange="toggleSecurity('requirePin')">
+                    <span>Require PIN</span>
+                </label>
+                <label class="checkbox-label">
+                    <input type="checkbox" id="requirePhotoCheck" onchange="toggleSecurity('requirePhoto')">
+                    <span>Require Face ID</span>
+                </label>
+                <label class="checkbox-label">
+                    <input type="checkbox" id="requireGPSCheck" onchange="toggleSecurity('requireGPS')">
+                    <span>Require GPS</span>
+                </label>
+            </div>
+
+            <div class="settings-section" id="ownerTools"
+                style="display: none; border: 1px dashed var(--secondary-orange); padding: 1rem; border-radius: 8px;">
+                <h4 style="color: var(--secondary-orange);">👑 Owner-Only: Advanced Settings</h4>
+                <p style="font-size: 0.8rem; margin-bottom: 1rem; color: var(--text-muted);">
+                    As the system owner, you can override global restrictions and set the official business location.
+                </p>
+                <button class="btn-confirm" style="width: 100%; background: var(--secondary-orange);"
+                    onclick="setOfficeLocation()">
+                    📍 Set Current Location as "Official Office"
+                </button>
+            </div>
+
+            <!-- New Admin Leave Management -->
+            <div class="settings-section" id="adminLeaveSection">
+                <h4>📋 Leave Approvals</h4>
+                <p style="color:var(--text-muted);">Loading requests...</p>
+            </div>
+
+            <div class="settings-section">
+                <h4>💾 Data Management</h4>
+                <div class="modal-buttons" style="margin-top: 5px;">
+                    <button class="btn-cancel" onclick="showResetModal()">⚠️ Reset All Data</button>
+                    <button class="btn-confirm btn-secondary" onclick="triggerRestore()">📂 Restore JSON</button>
+                    <input type="file" id="restoreInput" style="display: none" onchange="handleRestore(event)"
+                        accept=".json">
+                    <button class="btn-confirm" onclick="exportToJSON()">💾 Backup JSON</button>
+                </div>
+            </div>
+
+            <div class="modal-buttons">
+                <button class="btn-cancel" onclick="closeSettingsModal()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Reset Modal -->
+    <div class="modal" id="resetModal">
+        <div class="modal-content">
+            <h3>⚠️ Confirm Reset</h3>
+            <p class="modal-subtitle">All data (Attendance & Users) will be permanently deleted!</p>
+            <div class="modal-buttons">
+                <button class="btn-cancel" onclick="closeResetModal()">Cancel</button>
+                <button class="btn-confirm btn-danger" onclick="confirmResetAll()">DELETE ALL</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Biometric Reset/Register Modal -->
+    <div class="modal" id="biometricModal">
+        <div class="modal-content biometric-modal">
+            <h3>👤 Biometric Hub</h3>
+            <p class="modal-subtitle" id="bioStatusText">Manage your Face ID registration</p>
+
+            <div class="bio-profile-box">
+                <div class="bio-avatar-preview" id="bioAvatarPreview">
+                    <span id="bioAvatarPlaceholder">👤</span>
+                </div>
+                <div class="bio-info">
+                    <h4 id="bioUserNameDisplay">-</h4>
+                    <span id="bioRegistrationDate">Status: Not Registered</span>
+                </div>
+            </div>
+
+            <div class="bio-actions" id="bioActions">
+                <!-- Buttons injected by JS -->
+            </div>
+
+            <div class="modal-buttons">
+                <button class="btn-cancel" onclick="closeBiometricModal()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Leave Request Hub Modal -->
+    <div class="modal" id="leaveModal">
+        <div class="modal-content leave-modal">
+            <h3>📅 Leave Request Hub</h3>
+            <p class="modal-subtitle">Request time off and track your balance</p>
+
+            <!-- Quota Overview -->
+            <div class="leave-quota-grid" id="leaveQuotaGrid">
+                <!-- Quotas injected by JS -->
+            </div>
+
+            <!-- Request Form -->
+            <div class="leave-form-box">
+                <h4>➕ Submit New Request</h4>
+                <div class="form-row">
+                    <select id="leaveType" class="form-input">
+                        <option value="Vacation">Annual Leave (ลาพักร้อน)</option>
+                        <option value="Sick">Sick Leave (ลาป่วย)</option>
+                        <option value="Personal">Personal Leave (ลากิจ)</option>
+                    </select>
+                </div>
+                <div class="form-row">
+                    <div class="input-group">
+                        <label>Start Date</label>
+                        <input type="date" id="leaveStart" class="form-input">
+                    </div>
+                    <div class="input-group">
+                        <label>End Date</label>
+                        <input type="date" id="leaveEnd" class="form-input">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <textarea id="leaveReason" class="form-input" placeholder="เหตุผลการลา (Reason)..."
+                        rows="2"></textarea>
+                </div>
+                <button class="btn-confirm" style="width: 100%;" onclick="submitLeaveRequest()">🚀 Submit
+                    Request</button>
+            </div>
+
+            <!-- Leave History -->
+            <div class="leave-history-section">
+                <h4>📝 My Leave History</h4>
+                <div class="leave-history-list" id="leaveHistoryList">
+                    <!-- History items injected by JS -->
+                </div>
+            </div>
+
+            <div class="modal-buttons">
+                <button class="btn-cancel" onclick="closeLeaveModal()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Registration Webcam Modal (Re-using some classes) -->
+    <div class="modal" id="bioRegisterModal">
+        <div class="modal-content webcam-modal">
+            <h3>📸 Register Face ID</h3>
+            <p class="modal-subtitle">Look directly at the camera to scan your face</p>
+            <div class="webcam-container">
+                <video id="bioWebcam" autoplay playsinline></video>
+                <canvas id="bioCanvas" style="display:none;"></canvas>
+            </div>
+            <div class="modal-buttons">
+                <button class="btn-cancel" onclick="closeBioRegisterModal()">Cancel</button>
+                <button class="btn-confirm" onclick="registerFace()">📸 Scan & Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- AI Liveness Challenge Modal -->
+    <div class="modal" id="livenessModal">
+        <div class="modal-content liveness-modal">
+            <div class="liveness-header">
+                <h3>🛡️ AI Liveness Challenge</h3>
+                <p id="challengeText">Please blink your eyes naturally...</p>
+            </div>
+            <div class="webcam-container">
+                <video id="livenessWebcam" autoplay playsinline></video>
+                <div class="face-frame"></div>
+                <div class="liveness-progress">
+                    <div class="progress-fill" id="livenessProgress"></div>
+                </div>
+            </div>
+            <div class="challenge-indicators">
+                <div class="indicator" id="ind-blink">👁️ Blink</div>
+                <div class="indicator" id="ind-smile">😊 Smile</div>
+                <div class="indicator" id="ind-head">↔️ Turn</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Team Board Modal -->
+    <div class="modal" id="teamBoardModal">
+        <div class="modal-content team-board-modal">
+            <h3>👥 Team Board</h3>
+            <p class="modal-subtitle">Real-time team presence and status</p>
+
+            <div class="team-board-grid" id="fullTeamGrid">
+                <!-- Team cards injected by JS -->
+            </div>
+
+            <div class="modal-buttons">
+                <button class="btn-cancel" onclick="closeTeamBoardModal()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Restricted Access Modal -->
+    <div class="modal" id="restrictedModal">
+        <div class="modal-content">
+            <span style="font-size: 3rem;">🚫</span>
+            <h3>Access Restricted</h3>
+            <p class="modal-subtitle">This area is reserved for Administrator role only.</p>
+            <div class="modal-buttons">
+                <button class="btn-confirm" onclick="closeRestrictedModal()">I Understand</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+
+</html>

@@ -312,11 +312,14 @@ function stopWebcam() {
 }
 
 async function capturePhoto() {
+    console.log('capturePhoto() called, pendingAction:', pendingAction);
+
     const video = document.getElementById('webcam');
     const canvas = document.getElementById('canvas');
     const context = canvas.getContext('2d');
 
     if (!video || !video.videoWidth) {
+        console.error('Video not ready');
         window.toast.error('❌ กล้องยังไม่พร้อม กรุณารอสักครู่');
         return;
     }
@@ -327,6 +330,7 @@ async function capturePhoto() {
 
     // Convert to base64
     const photoData = canvas.toDataURL('image/jpeg', 0.8);
+    console.log('Photo captured, size:', photoData.length);
 
     // ตรวจสอบว่าต้องเปรียบเทียบใบหน้าหรือไม่
     if (currentState.userName && currentState.employees) {
@@ -372,11 +376,15 @@ async function capturePhoto() {
     }
 
     closeWebcamModal();
+    console.log('Webcam closed, checking next step...');
 
     // Continue to next security step
+    console.log('requireGPS:', currentState.securitySettings.requireGPS);
     if (currentState.securitySettings.requireGPS) {
+        console.log('Proceeding to GPS verification');
         verifyGPS();
     } else {
+        console.log('No GPS required, executing action directly');
         executePendingAction();
     }
 }
@@ -555,7 +563,14 @@ function calculateDistance(lat1, lon1, lat2, lon2) {
 
 // Execute the pending action after all security checks
 function executePendingAction() {
-    if (!pendingAction) return;
+    console.log('executePendingAction called, pendingAction:', pendingAction);
+
+    if (!pendingAction) {
+        console.warn('No pending action to execute');
+        return;
+    }
+
+    console.log('Executing action:', pendingAction);
 
     if (pendingAction === 'clockIn') {
         clockIn();
@@ -570,6 +585,8 @@ function executePendingAction() {
 
 // Clock in
 function clockIn() {
+    console.log('clockIn() called for user:', currentState.userName);
+
     const now = new Date();
     currentState.isClockedIn = true;
     currentState.currentSessionStart = now.toISOString();
@@ -613,13 +630,20 @@ function clockIn() {
         sessionEnd: null // Will be set on clock out
     };
 
+    console.log('Created attendance record:', record);
+
     if (projectInput) projectInput.value = ''; // Clear project input after clock in
 
     currentState.attendanceRecords.unshift(record);
+
+    console.log('Total attendance records:', currentState.attendanceRecords.length);
+
     currentState.pendingPhoto = null;
     currentState.pendingLocation = null;
     renderAttendanceTable();
     window.toast.success(`✅ สวัสดีครับคุณ ${currentState.userName} เข้างานเรียบร้อย`);
+
+    console.log('clockIn() completed successfully');
 }
 
 // Clock out

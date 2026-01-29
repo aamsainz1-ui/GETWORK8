@@ -579,8 +579,8 @@ function executePendingAction() {
     }
 
     pendingAction = null;
-    updateUI();
-    saveToLocalStorage();
+    // Note: clockIn() and clockOut() already call saveToLocalStorage() and updateUI()
+    console.log('executePendingAction completed');
 }
 
 // Clock in
@@ -652,11 +652,20 @@ function clockIn() {
 
     window.toast.success(`✅ สวัสดีครับคุณ ${currentState.userName} เข้างานเรียบร้อย`);
 
+    // TIER-2 EXPLICIT FEEDBACK: Blocking Alert Popup
+    // This ensures the user MUST acknowledge the success before doing anything else
+    // Prevents "Ghost Record" issue where user navigates away before persistence completes
+    setTimeout(() => {
+        alert(`✅ บันทึกเวลาเข้างานสำเร็จ!\n\nชื่อ: ${currentState.userName}\nเวลา: ${formatTime(now)}\nวันที่: ${formatDate(now)}\n\nข้อมูลถูกบันทึกในระบบเรียบร้อยแล้ว`);
+    }, 100);
+
     console.log('clockIn() completed successfully');
 }
 
 // Clock out
 function clockOut() {
+    console.log('clockOut() called for user:', currentState.userName);
+
     const now = new Date();
 
     // End any active break first
@@ -667,6 +676,7 @@ function clockOut() {
     currentState.isClockedIn = false;
 
     // Update the most recent record
+    let durationText = '';
     if (currentState.attendanceRecords.length > 0) {
         const record = currentState.attendanceRecords[0];
         record.clockOut = formatTime(now);
@@ -676,6 +686,7 @@ function clockOut() {
         const start = new Date(currentState.currentSessionStart);
         const duration = calculateDuration(start, now);
         record.duration = duration;
+        durationText = duration;
 
         // Calculate break times
         record.restroomTime = calculateTotalBreakTime(currentState.currentBreaks.restroom);
@@ -687,11 +698,29 @@ function clockOut() {
     currentState.currentSessionStart = null;
     currentState.currentBreaks = { restroom: [], rest: [] };
     currentState.activeBreak = null;
+
+    // CRITICAL: Save to localStorage immediately!
+    saveToLocalStorage();
+
+    // CRITICAL: Render table immediately!
     renderAttendanceTable();
+
     renderWeeklyChart(); // Phase 4: Update Analytics
     updateWorkLifeScore(); // Phase 4: Update Score
     calculateStats(); // Update statistics after clock out
+
+    // CRITICAL: Update UI immediately!
+    updateUI();
+
     window.toast.info(`👋 เลิกงานแล้ว พักผ่อนให้เต็มที่นะครับคุณ ${currentState.userName}`);
+
+    // TIER-2 EXPLICIT FEEDBACK: Blocking Alert Popup
+    // This ensures the user MUST acknowledge the success before doing anything else
+    setTimeout(() => {
+        alert(`✅ บันทึกเวลาออกงานสำเร็จ!\n\nชื่อ: ${currentState.userName}\nเวลาออก: ${formatTime(now)}\nวันที่: ${formatDate(now)}\nระยะเวลาทำงาน: ${durationText}\n\nข้อมูลถูกบันทึกในระบบเรียบร้อยแล้ว`);
+    }, 100);
+
+    console.log('clockOut() completed successfully');
 }
 
 // Format date to Thai format (DD/MM/YYYY)
@@ -710,6 +739,20 @@ function formatTime(date) {
     const minutes = String(d.getMinutes()).padStart(2, '0');
     return `${hours}:${minutes}`;
 }
+
+// Calculate duration between start and end time
+function calculateDuration(start, end) {
+    const diff = end - start;
+    const hours = Math.floor(diff / (1000 * 60 * 60));
+    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+
+    if (hours > 0) {
+        return `${hours} ชม. ${minutes} นาที`;
+    } else {
+        return `${minutes} นาที`;
+    }
+}
+
 
 // Format break time from milliseconds to readable format
 function formatBreakTime(milliseconds) {

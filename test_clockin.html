@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🧪 ทดสอบระบบการเข้างาน - GlobalWork Pro</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .test-container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 800px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        h1 {
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 2rem;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 0.9rem;
+        }
+
+        .test-section {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .test-section h2 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .test-item {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            border-left: 4px solid #667eea;
+        }
+
+        .test-item h3 {
+            color: #667eea;
+            font-size: 1rem;
+            margin-bottom: 8px;
+        }
+
+        .test-item p {
+            color: #666;
+            font-size: 0.9rem;
+            line-height: 1.6;
+        }
+
+        .test-item code {
+            background: #f0f0f0;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85rem;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+
+        .status-pass {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-check {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .btn-test {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 20px;
+            transition: transform 0.2s;
+        }
+
+        .btn-test:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .checklist {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .checklist li {
+            padding: 8px 0;
+            padding-left: 30px;
+            position: relative;
+        }
+
+        .checklist li:before {
+            content: "✓";
+            position: absolute;
+            left: 0;
+            color: #667eea;
+            font-weight: bold;
+            font-size: 1.2rem;
+        }
+
+        .alert-box {
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 20px;
+        }
+
+        .alert-box h3 {
+            color: #856404;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .alert-box p {
+            color: #856404;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="test-container">
+        <h1>🧪 ทดสอบระบบการเข้างาน</h1>
+        <p class="subtitle">GlobalWork Pro - Clock In/Out System Test</p>
+
+        <div class="test-section">
+            <h2>🔧 การแก้ไขที่ทำ <span class="status-badge status-pass">✅ เสร็จสมบูรณ์</span></h2>
+
+            <div class="test-item">
+                <h3>1. เพิ่ม Alert Popup ใน clockIn()</h3>
+                <p>เพิ่ม Tier-2 Explicit Feedback (Alert Popup แบบ Blocking) เพื่อบังคับให้ผู้ใช้รับทราบว่าบันทึกสำเร็จ
+                </p>
+            </div>
+
+            <div class="test-item">
+                <h3>2. แก้ไข clockOut() - เพิ่ม saveToLocalStorage()</h3>
+                <p>เพิ่มการบันทึกข้อมูลทันทีหลังจาก Clock Out เพื่อป้องกันข้อมูลหาย</p>
+            </div>
+
+            <div class="test-item">
+                <h3>3. แก้ไข clockOut() - เพิ่ม updateUI()</h3>
+                <p>เพิ่มการอัปเดต UI ทันทีเพื่อให้ปุ่มและสถานะเปลี่ยนทันที</p>
+            </div>
+
+            <div class="test-item">
+                <h3>4. เพิ่ม Alert Popup ใน clockOut()</h3>
+                <p>เพิ่ม Alert Popup แสดงข้อมูลเวลาออกและระยะเวลาทำงาน</p>
+            </div>
+
+            <div class="test-item">
+                <h3>5. เพิ่มฟังก์ชัน calculateDuration()</h3>
+                <p>สร้างฟังก์ชันคำนวณระยะเวลาทำงานที่หายไป</p>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>✅ วิธีทดสอบ <span class="status-badge status-check">ต้องทำ</span></h2>
+
+            <ul class="checklist">
+                <li>เปิดไฟล์ <code>index.html</code> ในเบราว์เซอร์</li>
+                <li>กด F12 เพื่อเปิด Developer Console</li>
+                <li>เลือกชื่อพนักงานจาก dropdown</li>
+                <li>กดปุ่ม "ลงเวลาเข้า" (Start Work)</li>
+                <li>ผ่านขั้นตอนความปลอดภัย (PIN, Face Scan, GPS)</li>
+                <li><strong>ต้องเห็น Alert Popup</strong> แสดงข้อมูลการบันทึก</li>
+                <li>กด OK บน Alert Popup</li>
+                <li><strong>ตรวจสอบตาราง</strong> ต้องมีข้อมูลปรากฏทันที</li>
+                <li>กดปุ่ม "ลงเวลาออก" (Stop Work)</li>
+                <li><strong>ต้องเห็น Alert Popup</strong> แสดงเวลาออกและระยะเวลา</li>
+                <li>รีเฟรชหน้าเว็บ (F5) - ข้อมูลต้องยังอยู่</li>
+            </ul>
+        </div>
+
+        <div class="test-section">
+            <h2>🔍 สิ่งที่ต้องเห็นใน Console</h2>
+
+            <div class="test-item">
+                <h3>เมื่อ Clock In</h3>
+                <p>
+                    <code>clockIn() called for user: [ชื่อ]</code><br>
+                    <code>Created attendance record: {...}</code><br>
+                    <code>Saving to localStorage...</code><br>
+                    <code>✅ Data saved successfully</code><br>
+                    <code>clockIn() completed successfully</code>
+                </p>
+            </div>
+
+            <div class="test-item">
+                <h3>เมื่อ Clock Out</h3>
+                <p>
+                    <code>clockOut() called for user: [ชื่อ]</code><br>
+                    <code>Saving to localStorage...</code><br>
+                    <code>✅ Data saved successfully</code><br>
+                    <code>clockOut() completed successfully</code>
+                </p>
+            </div>
+        </div>
+
+        <div class="alert-box">
+            <h3>⚠️ สำคัญ!</h3>
+            <p>
+                หากไม่เห็น Alert Popup หรือข้อมูลไม่ปรากฏในตาราง:<br>
+                1. ตรวจสอบ Console (F12) หาข้อความ Error สีแดง<br>
+                2. ตรวจสอบว่าไฟล์ <code>script.js</code> ถูก load ถูกต้อง<br>
+                3. ลองล้างข้อมูล localStorage: <code>localStorage.clear()</code> แล้วรีเฟรช
+            </p>
+        </div>
+
+        <button class="btn-test" onclick="window.location.href='index.html'">
+            🚀 เปิดระบบหลักเพื่อทดสอบ
+        </button>
+    </div>
+
+    <script>
+        console.log('🧪 Test Page Loaded');
+        console.log('✅ All fixes have been applied to script.js');
+        console.log('📝 Check CLOCK_IN_FIX_SUMMARY.md for detailed information');
+    </script>
+</body>
+
+</html>

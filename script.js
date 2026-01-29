@@ -83,8 +83,30 @@ function toggleSidebar() {
         sidebar.classList.toggle('collapsed');
     } else {
         sidebar.classList.toggle('expanded');
+
+        // Close sidebar when clicking outside on mobile
+        if (sidebar.classList.contains('expanded')) {
+            setTimeout(() => {
+                document.addEventListener('click', closeSidebarOnClickOutside);
+            }, 100);
+        } else {
+            document.removeEventListener('click', closeSidebarOnClickOutside);
+        }
     }
 }
+
+function closeSidebarOnClickOutside(event) {
+    const sidebar = document.querySelector('.sidebar');
+    const sidebarToggle = document.getElementById('sidebarToggleBtn');
+
+    if (sidebar.classList.contains('expanded') &&
+        !sidebar.contains(event.target) &&
+        event.target !== sidebarToggle) {
+        sidebar.classList.remove('expanded');
+        document.removeEventListener('click', closeSidebarOnClickOutside);
+    }
+}
+
 window.toggleSidebar = toggleSidebar;
 
 // Force Owner existence function
@@ -217,8 +239,10 @@ function showPinModal() {
 function closePinModal() {
     const modal = document.getElementById('pinModal');
     modal.classList.remove('show');
-    // If cancelled, clear pending action
-    // pendingAction = null; // Don't clear here if we want to allow retry, but strictly should clear on explicit close
+    // Stop webcam if it's running during security flow
+    stopWebcam();
+    // Clear pending action on explicit close
+    pendingAction = null;
 }
 
 // Fixed PIN Verification
@@ -287,10 +311,15 @@ function stopWebcam() {
     }
 }
 
-function capturePhoto() {
+async function capturePhoto() {
     const video = document.getElementById('webcam');
     const canvas = document.getElementById('canvas');
     const context = canvas.getContext('2d');
+
+    if (!video || !video.videoWidth) {
+        window.toast.error('❌ กล้องยังไม่พร้อม กรุณารอสักครู่');
+        return;
+    }
 
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
@@ -299,11 +328,36 @@ function capturePhoto() {
     // Convert to base64
     const photoData = canvas.toDataURL('image/jpeg', 0.8);
 
+    // ตรวจสอบว่าต้องเปรียบเทียบใบหน้าหรือไม่
+    if (currentState.userName && currentState.employees) {
+        const employee = currentState.employees.find(e => e.name === currentState.userName);
+
+        if (employee && employee.faceData) {
+            // มีข้อมูลใบหน้าที่ลงทะเบียนไว้ - ต้องตรวจสอบ
+            window.toast.info('🔍 กำลังตรวจสอบใบหน้า...');
+
+            const isMatch = await compareFaceData(photoData, employee.faceData);
+
+            if (!isMatch) {
+                window.toast.error('❌ ใบหน้าไม่ตรงกับที่ลงทะเบียน!\\n\\nกรุณาให้เจ้าของบัญชีสแกนหน้าด้วยตนเอง');
+                closeWebcamModal();
+                pendingAction = null;
+                return;
+            }
+
+            window.toast.success('✅ ยืนยันใบหน้าสำเร็จ!');
+        } else {
+            // ไม่มีข้อมูลใบหน้า - แจ้งเตือนให้ลงทะเบียน
+            window.toast.warning('⚠️ ยังไม่ได้ลงทะเบียนใบหน้า\\n\\nระบบจะบันทึกรูปนี้ แต่แนะนำให้ลงทะเบียน Face ID');
+        }
+    }
+
     // Store photo with pending action
     if (pendingAction) {
         const actionData = {
             photo: photoData,
-            timestamp: new Date().toISOString()
+            timestamp: new Date().toISOString(),
+            verified: currentState.employees?.find(e => e.name === currentState.userName)?.faceData ? true : false
         };
 
         // Store in the record that will be created
@@ -322,6 +376,94 @@ function capturePhoto() {
     }
 }
 
+// เปรียบเทียบข้อมูลใบหน้า
+async function compareFaceData(currentPhoto, registeredPhoto) {
+    return new Promise((resolve) => {
+        try {
+            const img1 = new Image();
+            const img2 = new Image();
+
+            let loaded = 0;
+            const checkLoaded = () => {
+                loaded++;
+                if (loaded === 2) {
+                    // สร้าง canvas สำหรับเปรียบเทียบ
+                    const canvas1 = document.createElement('canvas');
+                    const canvas2 = document.createElement('canvas');
+                    const ctx1 = canvas1.getContext('2d');
+                    const ctx2 = canvas2.getContext('2d');
+
+                    // ปรับขนาดให้เท่ากัน
+                    const size = 128;
+                    canvas1.width = canvas1.height = size;
+                    canvas2.width = canvas2.height = size;
+
+                    // วาดรูป
+                    ctx1.drawImage(img1, 0, 0, size, size);
+                    ctx2.drawImage(img2, 0, 0, size, size);
+
+                    // ดึง pixel data
+                    const data1 = ctx1.getImageData(0, 0, size, size).data;
+                    const data2 = ctx2.getImageData(0, 0, size, size).data;
+
+                    // คำนวณความแตกต่าง
+                    let diff = 0;
+                    const sampleRate = 4; // ตรวจสอบทุก 4 pixels เพื่อความเร็ว
+
+                    for (let i = 0; i < data1.length; i += sampleRate * 4) {
+                        const r1 = data1[i];
+                        const g1 = data1[i + 1];
+                        const b1 = data1[i + 2];
+
+                        const r2 = data2[i];
+                        const g2 = data2[i + 1];
+                        const b2 = data2[i + 2];
+
+                        diff += Math.abs(r1 - r2) + Math.abs(g1 - g2) + Math.abs(b1 - b2);
+                    }
+
+                    // คำนวณเปอร์เซ็นต์ความแตกต่าง
+                    const maxDiff = (size * size / sampleRate) * 255 * 3;
+                    const similarity = 100 - (diff / maxDiff * 100);
+
+                    console.log('Face similarity:', similarity.toFixed(2) + '%');
+
+                    // ถ้าความคล้ายคลึงมากกว่า 70% ถือว่าเป็นคนเดียวกัน
+                    // ค่านี้อาจต้องปรับตามสภาพแสงและมุมกล้อง
+                    const threshold = 70;
+
+                    if (similarity >= threshold) {
+                        resolve(true);
+                    } else {
+                        console.warn(`Face match failed: ${similarity.toFixed(2)}% < ${threshold}%`);
+                        resolve(false);
+                    }
+                }
+            };
+
+            img1.onload = checkLoaded;
+            img2.onload = checkLoaded;
+
+            img1.onerror = () => {
+                console.error('Failed to load current photo');
+                resolve(false);
+            };
+
+            img2.onerror = () => {
+                console.error('Failed to load registered photo');
+                resolve(false);
+            };
+
+            img1.src = currentPhoto;
+            img2.src = registeredPhoto;
+
+        } catch (error) {
+            console.error('Face comparison error:', error);
+            resolve(false);
+        }
+    });
+}
+
 // GPS Verification & Mock Geocoding
 async function verifyGPS() {
     if (!navigator.geolocation) {
@@ -332,8 +474,37 @@ async function verifyGPS() {
 
     navigator.geolocation.getCurrentPosition(async (position) => {
         const { latitude, longitude } = position.coords;
-        // Phase 2: Mock Reverse Geocoding
-        const locName = await mockReverseGeocode(latitude, longitude);
+
+        // Check against saved office locations
+        let matchedLocation = null;
+        let minDistance = Infinity;
+
+        // Safely get locations array
+        let locationsToCheck = [];
+        if (currentState.securitySettings.officeLocations && Array.isArray(currentState.securitySettings.officeLocations)) {
+            locationsToCheck = [...currentState.securitySettings.officeLocations];
+        } else if (currentState.securitySettings.officeLocation) {
+            // Fallback for legacy single location
+            locationsToCheck.push(currentState.securitySettings.officeLocation);
+        }
+
+        // Validate and check each location
+        locationsToCheck.forEach(loc => {
+            // Ensure location has valid coordinates
+            if (loc && typeof loc.latitude === 'number' && typeof loc.longitude === 'number') {
+                const dist = calculateDistance(latitude, longitude, loc.latitude, loc.longitude);
+                if (dist <= 150) { // 150 meters radius
+                    if (dist < minDistance) {
+                        minDistance = dist;
+                        matchedLocation = loc.name || 'Office Location';
+                    }
+                }
+            }
+        });
+
+        // Use matched office name or fallback to Geocoding
+        const locName = matchedLocation ? `${matchedLocation} (Verified)` : await mockReverseGeocode(latitude, longitude);
+
         currentState.pendingLocation = {
             latitude: latitude,
             longitude: longitude,
@@ -430,7 +601,10 @@ function clockIn() {
         location: currentState.pendingLocation || null,
         mode: currentState.workMode || 'office',
         project: projectName || 'General Work',
-        ipAddress: null // Would need server-side to get real IP
+        ipAddress: null, // Would need server-side to get real IP
+        timestamp: now.toISOString(), // Add timestamp for tracking
+        sessionStart: now.toISOString(), // Add session start
+        sessionEnd: null // Will be set on clock out
     };
 
     if (projectInput) projectInput.value = ''; // Clear project input after clock in
@@ -457,6 +631,7 @@ function clockOut() {
     if (currentState.attendanceRecords.length > 0) {
         const record = currentState.attendanceRecords[0];
         record.clockOut = formatTime(now);
+        record.sessionEnd = now.toISOString(); // Add session end timestamp
 
         // Calculate duration
         const start = new Date(currentState.currentSessionStart);
@@ -476,6 +651,7 @@ function clockOut() {
     renderAttendanceTable();
     renderWeeklyChart(); // Phase 4: Update Analytics
     updateWorkLifeScore(); // Phase 4: Update Score
+    calculateStats(); // Update statistics after clock out
     window.toast.info(`👋 เลิกงานแล้ว พักผ่อนให้เต็มที่นะครับคุณ ${currentState.userName}`);
 }
 
@@ -1539,29 +1715,9 @@ function renderTableData(records) {
   `).join('');
 }
 
-// Intercept Clock In/Out for stats
-const originalClockIn = clockIn;
-clockIn = function () {
-    const now = new Date();
-    originalClockIn.apply(this, arguments);
-    if (currentState.attendanceRecords.length > 0) {
-        currentState.attendanceRecords[0].timestamp = now.toISOString();
-        currentState.attendanceRecords[0].sessionStart = now.toISOString();
-        saveToLocalStorage();
-    }
-}
-
-const originalClockOut = clockOut;
-clockOut = function () {
-    const now = new Date();
-    originalClockOut.apply(this, arguments);
-    const record = currentState.attendanceRecords.find(r => r.clockIn && !r.sessionEnd);
-    if (record) {
-        record.sessionEnd = now.toISOString();
-        saveToLocalStorage();
-    }
-    calculateStats();
-}
+// Enhanced Clock In/Out with proper timestamp tracking
+// Note: Removed function override to prevent race conditions
+// Timestamps are now handled directly in clockIn() and clockOut() functions
 
 // Theme Toggle Logic
 function toggleTheme() {
@@ -1715,32 +1871,7 @@ window.exportToJSON = exportToJSON;
 window.showResetModal = showResetModal;
 window.showSettingsModal = showSettingsModal;
 
-// Update name selection dropdown
-function updateNameDropdown() {
-    const selector = document.getElementById('userName');
-    const filterSelector = document.getElementById('filterName');
-    if (!selector) return;
-
-    const currentName = selector.value;
-    const allEmployees = (currentState.employees || []);
-    const activeEmployees = allEmployees.filter(e => e.status !== 'Inactive');
-
-    // Main selector (active only)
-    selector.innerHTML = '<option value="">กรุณาเลือกชื่อ...</option>' +
-        activeEmployees.map(emp => `<option value="${emp.name}">${emp.name}</option>`).join('');
-
-    // Filter selector (everyone including inactive for history)
-    if (filterSelector) {
-        filterSelector.innerHTML = '<option value="all">Everyone</option>' +
-            allEmployees.map(emp => `<option value="${emp.name}">${emp.name}</option>`).join('');
-    }
-
-    // Restore selection if still active
-    if (activeEmployees.some(e => e.name === currentName)) {
-        selector.value = currentName;
-    }
-}
-window.updateNameDropdown = updateNameDropdown;
+// Duplicate function removed - using the one at line 1274
 
 // History Smooth Scroll
 function scrollToHistory() {
@@ -1883,7 +2014,7 @@ function renderLeaveQuotas() {
     const employee = (currentState.employees || []).find(e => e.name === currentState.userName);
 
     // Use employee specific quotas or global defaults
-    const quotas = employee?.leaveQuotas || currentState.leaveQuotas;
+    const quotas = employee?.leaveQuotas || currentState.leaveQuotas || { Vacation: 0, Sick: 0, Personal: 0 };
     const requests = (currentState.leaveRequests || []).filter(r => r.userName === currentState.userName && r.status === 'Approved');
 
     const types = [
@@ -1893,9 +2024,9 @@ function renderLeaveQuotas() {
     ];
 
     grid.innerHTML = types.map(t => {
-        const used = requests.filter(r => r.type === t.key).reduce((sum, r) => sum + r.days, 0);
+        const used = requests.filter(r => r.type === t.key).reduce((sum, r) => sum + (r.days || 0), 0);
         const total = quotas[t.key] || 0;
-        const remaining = total - used;
+        const remaining = Math.max(0, total - used); // Prevent negative values
 
         return `
             <div class="quota-card ${t.color}">
@@ -2095,6 +2226,14 @@ let challengeActive = false;
 async function startLivenessChallenge() {
     const modal = document.getElementById('livenessModal');
     const video = document.getElementById('livenessWebcam');
+    const progress = document.getElementById('livenessProgress');
+    const text = document.getElementById('challengeText');
+
+    // Check if user is selected
+    if (!currentState.userName) {
+        window.toast.warning('⚠️ กรุณาเลือกชื่อพนักงานก่อน');
+        return;
+    }
 
     // Check if Face ID is registered
     const employee = (currentState.employees || []).find(e => e.name === currentState.userName);
@@ -2102,6 +2241,14 @@ async function startLivenessChallenge() {
         window.toast.warning('⚠️ Error: Face ID not registered. Please register in Biometric Hub first.');
         return;
     }
+
+    // Reset progress bar and indicators
+    if (progress) progress.style.width = '0%';
+    if (text) text.textContent = 'Initializing AI Liveness Detection...';
+    ['ind-blink', 'ind-smile', 'ind-head'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.classList.remove('active');
+    });
 
     modal.classList.add('show');
     challengeActive = true;
@@ -2145,20 +2292,21 @@ function runAIHeuristics() {
         if (step >= 100) {
             clearInterval(interval);
 
-            // Mock Face Matching Logic
-            const isMatch = Math.random() > 0.1; // 90% match success for demo
-            if (isMatch) {
-                text.textContent = '✅ Identity Verified!';
-                setTimeout(() => {
-                    completeLiveness();
-                }, 1000);
-            } else {
-                text.textContent = '❌ Identity Mismatch!';
-                setTimeout(() => {
-                    window.toast.error('⚠️ Verification Failed: Face does not match registered data.');
-                    closeLivenessModal();
-                }, 1500);
-            }
+            // Real Face Verification Logic
+            verifyBiometricMatch().then(isMatch => {
+                if (isMatch) {
+                    text.textContent = '✅ Identity Verified!';
+                    setTimeout(() => {
+                        completeLiveness();
+                    }, 1000);
+                } else {
+                    text.textContent = '❌ Identity Mismatch!';
+                    setTimeout(() => {
+                        window.toast.error('⚠️ Verification Failed: Face does not match registered data.');
+                        closeLivenessModal();
+                    }, 1500);
+                }
+            });
         }
     }, 50);
 }
@@ -2193,6 +2341,72 @@ function closeLivenessModal() {
         livenessStream.getTracks().forEach(t => t.stop());
         livenessStream = null;
     }
+}
+
+async function verifyBiometricMatch() {
+    // Validate userName is selected
+    if (!currentState.userName) {
+        console.error('No user selected for biometric verification');
+        return false;
+    }
+
+    const video = document.getElementById('livenessWebcam');
+    if (!video || !video.videoWidth || !video.videoHeight) {
+        console.error('Video element not ready');
+        return false;
+    }
+
+    const employee = (currentState.employees || []).find(e => e.name === currentState.userName);
+    if (!employee || !employee.faceData) {
+        console.error('Employee face data not found');
+        return false;
+    }
+
+    return await compareImages(employee.faceData, video);
+}
+
+function compareImages(base64A, videoElement) {
+    return new Promise(resolve => {
+        const imgA = new Image();
+        imgA.onload = () => {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            // Resize to small 64x64 for comparison
+            const size = 64;
+            canvas.width = size;
+            canvas.height = size;
+
+            // Draw Registered Image
+            ctx.drawImage(imgA, 0, 0, size, size);
+            const dataA = ctx.getImageData(0, 0, size, size).data;
+
+            // Draw Current Video Frame
+            ctx.clearRect(0, 0, size, size);
+            ctx.drawImage(videoElement, 0, 0, size, size);
+            const dataB = ctx.getImageData(0, 0, size, size).data;
+
+            // Compare Pixel Difference
+            let diff = 0;
+            for (let i = 0; i < dataA.length; i += 4) {
+                const rDiff = Math.abs(dataA[i] - dataB[i]);
+                const gDiff = Math.abs(dataA[i + 1] - dataB[i + 1]);
+                const bDiff = Math.abs(dataA[i + 2] - dataB[i + 2]);
+                diff += (rDiff + gDiff + bDiff);
+            }
+
+            const totalPixels = size * size;
+            const maxDiff = totalPixels * 3 * 255;
+            const percentage = (diff / maxDiff) * 100;
+
+            console.log('Face Match Diff:', percentage.toFixed(2) + '%');
+
+            // Heuristic Threshold: If difference is less than 35%, assume it's the same person/environment
+            // This is basic but prevents total randoms or empty chairs (usually)
+            resolve(percentage < 35);
+        };
+        imgA.onerror = () => resolve(false);
+        imgA.src = base64A;
+    });
 }
 
 // Phase 4: Analytics & Score
@@ -2408,9 +2622,19 @@ function openMapPicker() {
     const modal = document.getElementById('mapModal');
     modal.classList.add('show');
 
-    // Default center (Bangkok or saved location)
-    const lat = currentState.securitySettings.officeLocation?.latitude || 13.7563;
-    const lng = currentState.securitySettings.officeLocation?.longitude || 100.5018;
+    // Default center (Bangkok or last saved location)
+    let lat = 13.7563;
+    let lng = 100.5018;
+
+    if (currentState.securitySettings.officeLocations && currentState.securitySettings.officeLocations.length > 0) {
+        const lastLoc = currentState.securitySettings.officeLocations[currentState.securitySettings.officeLocations.length - 1];
+        lat = lastLoc.latitude;
+        lng = lastLoc.longitude;
+    } else if (currentState.securitySettings.officeLocation) {
+        // Fallback for legacy data
+        lat = currentState.securitySettings.officeLocation.latitude;
+        lng = currentState.securitySettings.officeLocation.longitude;
+    }
 
     setTimeout(() => {
         if (!map) {

@@ -2876,8 +2876,74 @@ window.saveLateThreshold = saveLateThreshold;
 window.loadEmployeeQuota = loadEmployeeQuota;
 window.saveEmployeeQuota = saveEmployeeQuota;
 
+// ========================================
+// LOCAL STORAGE FUNCTIONS (CRITICAL!)
+// ========================================
 
+function saveToLocalStorage() {
+    try {
+        console.log('Saving to localStorage...', {
+            attendanceRecords: currentState.attendanceRecords.length,
+            employees: currentState.employees?.length || 0,
+            leaveRequests: currentState.leaveRequests?.length || 0
+        });
 
+        localStorage.setItem('globalWorkState', JSON.stringify(currentState));
+        console.log('✅ Data saved successfully');
+    } catch (error) {
+        console.error('❌ Failed to save to localStorage:', error);
+        window.toast.error('ไม่สามารถบันทึกข้อมูลได้: ' + error.message);
+    }
+}
 
+function loadFromLocalStorage() {
+    try {
+        console.log('Loading from localStorage...');
+        const saved = localStorage.getItem('globalWorkState');
+
+        if (saved) {
+            const parsed = JSON.parse(saved);
+            console.log('Found saved data:', {
+                attendanceRecords: parsed.attendanceRecords?.length || 0,
+                employees: parsed.employees?.length || 0,
+                leaveRequests: parsed.leaveRequests?.length || 0
+            });
+
+            // Merge saved state with current state
+            Object.assign(currentState, parsed);
+
+            // Ensure arrays exist
+            if (!currentState.attendanceRecords) currentState.attendanceRecords = [];
+            if (!currentState.employees) currentState.employees = [];
+            if (!currentState.leaveRequests) currentState.leaveRequests = [];
+            if (!currentState.currentBreaks) currentState.currentBreaks = { restroom: [], rest: [] };
+            if (!currentState.securitySettings) {
+                currentState.securitySettings = {
+                    requirePin: true,
+                    requirePhoto: true,
+                    requireGPS: true,
+                    officeLocations: [],
+                    lateThreshold: '09:00'
+                };
+            }
+            if (!currentState.securitySettings.officeLocations) {
+                currentState.securitySettings.officeLocations = [];
+            }
+
+            console.log('✅ Data loaded successfully');
+        } else {
+            console.log('No saved data found, using defaults');
+        }
+    } catch (error) {
+        console.error('❌ Failed to load from localStorage:', error);
+        window.toast.error('ไม่สามารถโหลดข้อมูลได้: ' + error.message);
+    }
+}
+
+// Export functions to window
+window.saveToLocalStorage = saveToLocalStorage;
+window.loadFromLocalStorage = loadFromLocalStorage;
+
+console.log('✅ LocalStorage functions loaded');
 
 

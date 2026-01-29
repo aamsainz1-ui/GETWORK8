@@ -685,6 +685,23 @@ function clockOut() {
     window.toast.info(`👋 เลิกงานแล้ว พักผ่อนให้เต็มที่นะครับคุณ ${currentState.userName}`);
 }
 
+// Format date to Thai format (DD/MM/YYYY)
+function formatDate(date) {
+    const d = new Date(date);
+    const day = String(d.getDate()).padStart(2, '0');
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const year = d.getFullYear();
+    return `${day}/${month}/${year}`;
+}
+
+// Format time to HH:MM format
+function formatTime(date) {
+    const d = new Date(date);
+    const hours = String(d.getHours()).padStart(2, '0');
+    const minutes = String(d.getMinutes()).padStart(2, '0');
+    return `${hours}:${minutes}`;
+}
+
 // Format break time from milliseconds to readable format
 function formatBreakTime(milliseconds) {
     if (!milliseconds || milliseconds === 0) return '0m';

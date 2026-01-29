@@ -307,6 +307,17 @@ body {
 .breadcrumbs {
     display: flex;
     align-items: center;
+    gap: 0.75rem;
+}
+
+.mobile-menu-toggle {
+    background: var(--primary-blue);
+    color: white;
+    border: none;
+}
+
+.mobile-menu-toggle:hover {
+    background: var(--primary-blue-hover);
 }
 
 .location-badge {

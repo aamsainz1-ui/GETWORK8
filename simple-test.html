@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Test - Clock In/Out</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+        }
+
+        h1 {
+            color: #1e293b;
+            margin-bottom: 10px;
+        }
+
+        .status {
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 8px;
+            font-weight: bold;
+        }
+
+        .status.out {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .status.in {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        input,
+        button {
+            padding: 12px 20px;
+            margin: 5px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+
+        button {
+            background: #2563eb;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        button:hover {
+            background: #1d4ed8;
+        }
+
+        button:disabled {
+            background: #94a3b8;
+            cursor: not-allowed;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th,
+        td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        th {
+            background: #f1f5f9;
+            font-weight: bold;
+        }
+
+        tr:hover {
+            background: #f8fafc;
+        }
+
+        .info {
+            background: #dbeafe;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border-left: 4px solid #2563eb;
+        }
+
+        .success {
+            background: #dcfce7;
+            padding: 10px 15px;
+            border-radius: 6px;
+            margin: 10px 0;
+            color: #166534;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>🕐 Simple Clock In/Out Test</h1>
+        <p style="color: #64748b; margin-bottom: 20px;">ทดสอบระบบบันทึกเวลาแบบง่ายที่สุด</p>
+
+        <div class="info">
+            <strong>📋 วิธีใช้:</strong><br>
+            1. ใส่ชื่อของคุณ<br>
+            2. กด "Clock In" เพื่อบันทึกเวลาเข้างาน<br>
+            3. กด "Clock Out" เพื่อบันทึกเวลาออกงาน<br>
+            4. ดูข้อมูลในตารางด้านล่าง
+        </div>
+
+        <div id="status" class="status out">
+            ❌ ยังไม่ได้เข้างาน
+        </div>
+
+        <div style="margin: 20px 0;">
+            <input type="text" id="userName" placeholder="ชื่อของคุณ" value="Test User">
+            <button id="clockInBtn" onclick="clockIn()">🟢 Clock In</button>
+            <button id="clockOutBtn" onclick="clockOut()" disabled>🔴 Clock Out</button>
+            <button onclick="clearData()" style="background: #dc2626;">🗑️ ล้างข้อมูล</button>
+        </div>
+
+        <div id="message"></div>
+
+        <h2 style="margin-top: 30px;">📊 ประวัติการทำงาน</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>ชื่อ</th>
+                    <th>วันที่</th>
+                    <th>เข้างาน</th>
+                    <th>ออกงาน</th>
+                    <th>ระยะเวลา</th>
+                </tr>
+            </thead>
+            <tbody id="recordsTable">
+                <tr>
+                    <td colspan="5" style="text-align: center; color: #94a3b8;">
+                        ยังไม่มีข้อมูล
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div style="margin-top: 30px; padding: 15px; background: #f1f5f9; border-radius: 8px;">
+            <strong>🔍 Debug Info:</strong>
+            <div id="debugInfo" style="font-family: monospace; font-size: 12px; margin-top: 10px;"></div>
+        </div>
+    </div>
+
+    <script>
+        // Simple state
+        let state = {
+            userName: '',
+            isClockedIn: false,
+            currentSessionStart: null,
+            records: []
+        };
+
+        // Load from localStorage on page load
+        function loadData() {
+            const saved = localStorage.getItem('simpleClockData');
+            if (saved) {
+                try {
+                    state = JSON.parse(saved);
+                    console.log('✅ Loaded data:', state);
+                    updateDebugInfo();
+                } catch (e) {
+                    console.error('❌ Failed to load:', e);
+                }
+            }
+            updateUI();
+            renderTable();
+        }
+
+        // Save to localStorage
+        function saveData() {
+            try {
+                localStorage.setItem('simpleClockData', JSON.stringify(state));
+                console.log('✅ Saved data:', state);
+                updateDebugInfo();
+                return true;
+            } catch (e) {
+                console.error('❌ Failed to save:', e);
+                showMessage('❌ บันทึกล้มเหลว: ' + e.message, 'error');
+                return false;
+            }
+        }
+
+        // Clock In
+        function clockIn() {
+            const userName = document.getElementById('userName').value.trim();
+
+            if (!userName) {
+                alert('❌ กรุณาใส่ชื่อ!');
+                return;
+            }
+
+            const now = new Date();
+
+            state.userName = userName;
+            state.isClockedIn = true;
+            state.currentSessionStart = now.toISOString();
+
+            console.log('🟢 Clock In:', {
+                userName: userName,
+                time: now.toLocaleTimeString('th-TH')
+            });
+
+            if (saveData()) {
+                showMessage('✅ บันทึกเวลาเข้างานสำเร็จ!', 'success');
+                updateUI();
+            }
+        }
+
+        // Clock Out
+        function clockOut() {
+            if (!state.isClockedIn) {
+                alert('❌ คุณยังไม่ได้ Clock In!');
+                return;
+            }
+
+            const now = new Date();
+            const startTime = new Date(state.currentSessionStart);
+            const duration = now - startTime;
+            const hours = Math.floor(duration / 3600000);
+            const minutes = Math.floor((duration % 3600000) / 60000);
+
+            const record = {
+                id: Date.now(),
+                userName: state.userName,
+                date: now.toLocaleDateString('th-TH'),
+                clockIn: startTime.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }),
+                clockOut: now.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }),
+                duration: `${hours}h ${minutes}m`,
+                timestamp: now.toISOString()
+            };
+
+            state.records.unshift(record);
+            state.isClockedIn = false;
+            state.currentSessionStart = null;
+
+            console.log('🔴 Clock Out:', record);
+
+            if (saveData()) {
+                showMessage('✅ บันทึกเวลาออกงานสำเร็จ!', 'success');
+                updateUI();
+                renderTable();
+            }
+        }
+
+        // Update UI
+        function updateUI() {
+            const statusDiv = document.getElementById('status');
+            const clockInBtn = document.getElementById('clockInBtn');
+            const clockOutBtn = document.getElementById('clockOutBtn');
+
+            if (state.isClockedIn) {
+                statusDiv.className = 'status in';
+                statusDiv.innerHTML = `✅ กำลังทำงาน (เข้างาน: ${new Date(state.currentSessionStart).toLocaleTimeString('th-TH')})`;
+                clockInBtn.disabled = true;
+                clockOutBtn.disabled = false;
+            } else {
+                statusDiv.className = 'status out';
+                statusDiv.innerHTML = '❌ ยังไม่ได้เข้างาน';
+                clockInBtn.disabled = false;
+                clockOutBtn.disabled = true;
+            }
+        }
+
+        // Render table
+        function renderTable() {
+            const tbody = document.getElementById('recordsTable');
+
+            if (state.records.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="5" style="text-align: center; color: #94a3b8;">
+                            ยังไม่มีข้อมูล
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            tbody.innerHTML = state.records.map(record => `
+                <tr>
+                    <td><strong>${record.userName}</strong></td>
+                    <td>${record.date}</td>
+                    <td>${record.clockIn}</td>
+                    <td>${record.clockOut}</td>
+                    <td>${record.duration}</td>
+                </tr>
+            `).join('');
+
+            console.log('📊 Table rendered with', state.records.length, 'records');
+        }
+
+        // Show message
+        function showMessage(msg, type) {
+            const div = document.getElementById('message');
+            div.innerHTML = `<div class="${type}">${msg}</div>`;
+            setTimeout(() => {
+                div.innerHTML = '';
+            }, 3000);
+        }
+
+        // Update debug info
+        function updateDebugInfo() {
+            const div = document.getElementById('debugInfo');
+            div.innerHTML = `
+                isClockedIn: ${state.isClockedIn}<br>
+                userName: ${state.userName || '(empty)'}<br>
+                records: ${state.records.length}<br>
+                localStorage: ${localStorage.getItem('simpleClockData') ? 'has data' : 'empty'}
+            `;
+        }
+
+        // Clear data
+        function clearData() {
+            if (confirm('ต้องการล้างข้อมูลทั้งหมดหรือไม่?')) {
+                localStorage.removeItem('simpleClockData');
+                state = {
+                    userName: '',
+                    isClockedIn: false,
+                    currentSessionStart: null,
+                    records: []
+                };
+                updateUI();
+                renderTable();
+                updateDebugInfo();
+                showMessage('✅ ล้างข้อมูลเรียบร้อย', 'success');
+            }
+        }
+
+        // Initialize on page load
+        window.addEventListener('load', () => {
+            console.log('🚀 Page loaded');
+            loadData();
+        });
+
+        // Log state changes
+        setInterval(() => {
+            updateDebugInfo();
+        }, 1000);
+    </script>
+</body>
+
+</html>

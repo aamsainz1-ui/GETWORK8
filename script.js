@@ -640,7 +640,16 @@ function clockIn() {
 
     currentState.pendingPhoto = null;
     currentState.pendingLocation = null;
+
+    // CRITICAL: Save to localStorage immediately!
+    saveToLocalStorage();
+
+    // CRITICAL: Render table immediately!
     renderAttendanceTable();
+
+    // CRITICAL: Update UI immediately!
+    updateUI();
+
     window.toast.success(`✅ สวัสดีครับคุณ ${currentState.userName} เข้างานเรียบร้อย`);
 
     console.log('clockIn() completed successfully');
@@ -977,7 +986,8 @@ function renderAttendanceTable() {
     const emptyState = document.getElementById('emptyState');
 
     if (!tbody) {
-        console.error('attendanceBody element not found!');
+        console.error('❌ attendanceBody element not found!');
+        alert('❌ Error: ไม่พบตาราง! กรุณา refresh หน้าเว็บ');
         return;
     }
 
@@ -990,35 +1000,66 @@ function renderAttendanceTable() {
 
     if (emptyState) emptyState.style.display = 'none';
 
-    tbody.innerHTML = currentState.attendanceRecords.map(record => {
-        const inOut = `${record.clockIn}${record.clockOut ? ' → ' + record.clockOut : ' → ...'}`;
-        const breaks = `${formatBreakTime(record.restroomTime)} / ${formatBreakTime(record.restTime)}`;
-        const project = record.project || 'General Work';
+    try {
+        tbody.innerHTML = currentState.attendanceRecords.map((record, index) => {
+            try {
+                const inOut = `${record.clockIn || 'N/A'}${record.clockOut ? ' → ' + record.clockOut : ' → ...'}`;
+                const breaks = `${formatBreakTime(record.restroomTime || 0)} / ${formatBreakTime(record.restTime || 0)}`;
+                const project = record.project || 'General Work';
 
-        return `
-        <tr>
-            <td>
-                <strong>${record.userName}</strong>
-                ${record.photo ? '<span class="security-indicator" title="Photo Verified">📸</span>' : ''}
-                ${record.location ? '<span class="security-indicator" title="GPS Verified">📍</span>' : ''}
-                ${record.isLate ? '<span class="late-badge">สาย</span>' : ''}
-            </td>
-            <td>${record.date}</td>
-            <td>${inOut}</td>
-            <td>${breaks}</td>
-            <td>${project}</td>
-            <td class="duration ${record.duration ? 'complete' : 'incomplete'}">
-                ${record.duration || 'กำลังทำงาน...'}
-            </td>
-            <td>
-                ${record.photo ? `<button class="btn-icon" onclick="viewPhoto('${record.id}')" title="View Photo">👁️</button>` : ''}
-                ${record.location ? `<button class="btn-icon" onclick="viewLocation('${record.id}')" title="View Location">🗺️</button>` : ''}
-            </td>
-        </tr>
+                return `
+                <tr>
+                    <td>
+                        <strong>${record.userName || 'Unknown'}</strong>
+                        ${record.photo ? '<span class="security-indicator" title="Photo Verified">📸</span>' : ''}
+                        ${record.location ? '<span class="security-indicator" title="GPS Verified">📍</span>' : ''}
+                        ${record.isLate ? '<span class="late-badge">สาย</span>' : ''}
+                    </td>
+                    <td>${record.date || 'N/A'}</td>
+                    <td>${inOut}</td>
+                    <td>${breaks}</td>
+                    <td>${project}</td>
+                    <td class="duration ${record.duration ? 'complete' : 'incomplete'}">
+                        ${record.duration || 'กำลังทำงาน...'}
+                    </td>
+                    <td>
+                        ${record.photo ? `<button class="btn-icon" onclick="viewPhoto('${record.id}')" title="View Photo">👁️</button>` : ''}
+                        ${record.location ? `<button class="btn-icon" onclick="viewLocation('${record.id}')" title="View Location">🗺️</button>` : ''}
+                    </td>
+                </tr>
+                `;
+            } catch (recordError) {
+                console.error('❌ Error rendering record', index, ':', recordError);
+                console.error('Record data:', record);
+                return `
+                <tr>
+                    <td colspan="7" style="color: red;">
+                        ❌ Error rendering record #${index + 1}: ${recordError.message}
+                    </td>
+                </tr>
+                `;
+            }
+        }).join('');
+
+        console.log('✅ Table rendered with', currentState.attendanceRecords.length, 'records');
+
+        // Force table to be visible
+        const table = document.getElementById('attendanceTable');
+        if (table) {
+            table.style.display = 'table';
+        }
+
+    } catch (error) {
+        console.error('❌ Fatal error in renderAttendanceTable:', error);
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="7" style="color: red; padding: 20px; text-align: center;">
+                    ❌ Error: ${error.message}<br>
+                    <small>กรุณาเปิด Console (F12) เพื่อดูรายละเอียด</small>
+                </td>
+            </tr>
         `;
-    }).join('');
-
-    console.log('Table rendered with', currentState.attendanceRecords.length, 'records');
+    }
 }
 
 // Export to Excel

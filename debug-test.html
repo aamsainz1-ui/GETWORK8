@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Test - GlobalWork Pro</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+
+        .debug-panel {
+            background: white;
+            padding: 20px;
+            margin: 10px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        button {
+            padding: 12px 24px;
+            margin: 5px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        .btn-primary {
+            background: #2563eb;
+            color: white;
+        }
+
+        .btn-success {
+            background: #16a34a;
+            color: white;
+        }
+
+        .btn-danger {
+            background: #dc2626;
+            color: white;
+        }
+
+        .btn-info {
+            background: #0891b2;
+            color: white;
+        }
+
+        pre {
+            background: #1e293b;
+            color: #e2e8f0;
+            padding: 15px;
+            border-radius: 6px;
+            overflow-x: auto;
+            max-height: 400px;
+        }
+
+        .record {
+            background: #f0f9ff;
+            padding: 10px;
+            margin: 5px 0;
+            border-left: 4px solid #2563eb;
+            border-radius: 4px;
+        }
+
+        .success {
+            color: #16a34a;
+            font-weight: bold;
+        }
+
+        .error {
+            color: #dc2626;
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>🔍 GlobalWork Pro - Debug Test</h1>
+
+    <div class="debug-panel">
+        <h2>1. ทดสอบ LocalStorage</h2>
+        <button class="btn-primary" onclick="testLocalStorage()">เช็ค LocalStorage</button>
+        <button class="btn-success" onclick="testSave()">ทดสอบบันทึก</button>
+        <button class="btn-danger" onclick="clearStorage()">ล้างข้อมูล</button>
+        <pre id="storageOutput">กดปุ่มเพื่อทดสอบ...</pre>
+    </div>
+
+    <div class="debug-panel">
+        <h2>2. ทดสอบ Clock In</h2>
+        <input type="text" id="testUserName" placeholder="ชื่อพนักงาน"
+            style="padding: 10px; margin: 5px; border: 1px solid #ccc; border-radius: 4px;">
+        <button class="btn-success" onclick="testClockIn()">ทดสอบ Clock In</button>
+        <pre id="clockInOutput">รอการทดสอบ...</pre>
+    </div>
+
+    <div class="debug-panel">
+        <h2>3. ข้อมูลที่บันทึก</h2>
+        <button class="btn-info" onclick="showRecords()">แสดงข้อมูลทั้งหมด</button>
+        <div id="recordsOutput"></div>
+    </div>
+
+    <div class="debug-panel">
+        <h2>4. ทดสอบ Render Table</h2>
+        <button class="btn-primary" onclick="testRender()">ทดสอบ Render</button>
+        <div id="renderOutput"></div>
+    </div>
+
+    <script>
+        // Simple state for testing
+        let testState = {
+            userName: '',
+            attendanceRecords: [],
+            isClockedIn: false
+        };
+
+        // Load from localStorage
+        function loadTestData() {
+            const saved = localStorage.getItem('globalWorkState');
+            if (saved) {
+                try {
+                    testState = JSON.parse(saved);
+                    return testState;
+                } catch (e) {
+                    return null;
+                }
+            }
+            return null;
+        }
+
+        // Test LocalStorage
+        function testLocalStorage() {
+            const output = document.getElementById('storageOutput');
+            const data = loadTestData();
+
+            if (data) {
+                output.innerHTML = `<span class="success">✅ พบข้อมูลใน LocalStorage</span>\n\n` +
+                    JSON.stringify(data, null, 2);
+            } else {
+                output.innerHTML = `<span class="error">❌ ไม่พบข้อมูลใน LocalStorage</span>`;
+            }
+        }
+
+        // Test Save
+        function testSave() {
+            const output = document.getElementById('storageOutput');
+
+            const testData = {
+                userName: 'Test User',
+                attendanceRecords: [
+                    {
+                        id: Date.now(),
+                        userName: 'Test User',
+                        date: new Date().toLocaleDateString('th-TH'),
+                        clockIn: new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }),
+                        clockOut: null,
+                        timestamp: new Date().toISOString()
+                    }
+                ],
+                isClockedIn: true
+            };
+
+            try {
+                localStorage.setItem('globalWorkState', JSON.stringify(testData));
+                output.innerHTML = `<span class="success">✅ บันทึกสำเร็จ!</span>\n\n` +
+                    JSON.stringify(testData, null, 2);
+            } catch (e) {
+                output.innerHTML = `<span class="error">❌ บันทึกล้มเหลว: ${e.message}</span>`;
+            }
+        }
+
+        // Clear Storage
+        function clearStorage() {
+            if (confirm('ต้องการล้างข้อมูลทั้งหมดหรือไม่?')) {
+                localStorage.removeItem('globalWorkState');
+                document.getElementById('storageOutput').innerHTML =
+                    `<span class="success">✅ ล้างข้อมูลเรียบร้อย</span>`;
+            }
+        }
+
+        // Test Clock In
+        function testClockIn() {
+            const output = document.getElementById('clockInOutput');
+            const userName = document.getElementById('testUserName').value || 'Test User';
+
+            const now = new Date();
+            const record = {
+                id: Date.now(),
+                userName: userName,
+                date: now.toLocaleDateString('th-TH'),
+                clockIn: now.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }),
+                clockOut: null,
+                isLate: false,
+                duration: null,
+                restroomTime: 0,
+                restTime: 0,
+                photo: null,
+                location: null,
+                mode: 'office',
+                project: 'Test Project',
+                timestamp: now.toISOString()
+            };
+
+            // Load existing data
+            let state = loadTestData() || { attendanceRecords: [] };
+
+            // Add new record
+            state.attendanceRecords.unshift(record);
+            state.userName = userName;
+            state.isClockedIn = true;
+
+            // Save
+            try {
+                localStorage.setItem('globalWorkState', JSON.stringify(state));
+                output.innerHTML = `<span class="success">✅ Clock In สำเร็จ!</span>\n\n` +
+                    `ชื่อ: ${userName}\n` +
+                    `เวลา: ${record.clockIn}\n` +
+                    `วันที่: ${record.date}\n\n` +
+                    `Total Records: ${state.attendanceRecords.length}`;
+            } catch (e) {
+                output.innerHTML = `<span class="error">❌ Clock In ล้มเหลว: ${e.message}</span>`;
+            }
+        }
+
+        // Show Records
+        function showRecords() {
+            const output = document.getElementById('recordsOutput');
+            const data = loadTestData();
+
+            if (!data || !data.attendanceRecords || data.attendanceRecords.length === 0) {
+                output.innerHTML = '<p class="error">❌ ไม่มีข้อมูล</p>';
+                return;
+            }
+
+            let html = `<p class="success">✅ พบ ${data.attendanceRecords.length} รายการ</p>`;
+
+            data.attendanceRecords.forEach((record, index) => {
+                html += `
+                    <div class="record">
+                        <strong>#${index + 1}</strong> - ${record.userName}<br>
+                        📅 ${record.date} | ⏰ ${record.clockIn} ${record.clockOut ? '→ ' + record.clockOut : '→ ...'}<br>
+                        📁 ${record.project || 'N/A'} | 🏢 ${record.mode || 'office'}
+                    </div>
+                `;
+            });
+
+            output.innerHTML = html;
+        }
+
+        // Test Render
+        function testRender() {
+            const output = document.getElementById('renderOutput');
+            const data = loadTestData();
+
+            if (!data || !data.attendanceRecords || data.attendanceRecords.length === 0) {
+                output.innerHTML = '<p class="error">❌ ไม่มีข้อมูลให้ render</p>';
+                return;
+            }
+
+            let html = '<table style="width: 100%; border-collapse: collapse; margin-top: 10px;">';
+            html += `
+                <thead>
+                    <tr style="background: #f1f5f9; text-align: left;">
+                        <th style="padding: 10px; border: 1px solid #e2e8f0;">Employee</th>
+                        <th style="padding: 10px; border: 1px solid #e2e8f0;">Date</th>
+                        <th style="padding: 10px; border: 1px solid #e2e8f0;">In / Out</th>
+                        <th style="padding: 10px; border: 1px solid #e2e8f0;">Project</th>
+                    </tr>
+                </thead>
+                <tbody>
+            `;
+
+            data.attendanceRecords.forEach(record => {
+                const inOut = `${record.clockIn}${record.clockOut ? ' → ' + record.clockOut : ' → ...'}`;
+                html += `
+                    <tr>
+                        <td style="padding: 10px; border: 1px solid #e2e8f0;">${record.userName}</td>
+                        <td style="padding: 10px; border: 1px solid #e2e8f0;">${record.date}</td>
+                        <td style="padding: 10px; border: 1px solid #e2e8f0;">${inOut}</td>
+                        <td style="padding: 10px; border: 1px solid #e2e8f0;">${record.project || 'N/A'}</td>
+                    </tr>
+                `;
+            });
+
+            html += '</tbody></table>';
+            output.innerHTML = html;
+        }
+
+        // Auto load on page load
+        window.addEventListener('load', () => {
+            testLocalStorage();
+            showRecords();
+        });
+    </script>
+</body>
+
+</html>

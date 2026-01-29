@@ -685,6 +685,20 @@ function clockOut() {
     window.toast.info(`👋 เลิกงานแล้ว พักผ่อนให้เต็มที่นะครับคุณ ${currentState.userName}`);
 }
 
+// Format break time from milliseconds to readable format
+function formatBreakTime(milliseconds) {
+    if (!milliseconds || milliseconds === 0) return '0m';
+
+    const totalMinutes = Math.floor(milliseconds / 60000);
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+
+    if (hours > 0) {
+        return minutes > 0 ? `${hours}h ${minutes}m` : `${hours}h`;
+    }
+    return `${minutes}m`;
+}
+
 // Handle break tracking (start/end toggle)
 function handleBreak(type) {
     const now = new Date();

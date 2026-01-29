@@ -940,34 +940,54 @@ function setWorkMode(mode) {
 
 // Render attendance table
 function renderAttendanceTable() {
+    console.log('renderAttendanceTable() called, records:', currentState.attendanceRecords.length);
+
     const tbody = document.getElementById('attendanceBody');
     const emptyState = document.getElementById('emptyState');
 
-    if (currentState.attendanceRecords.length === 0) {
-        tbody.innerHTML = '';
-        emptyState.style.display = 'block';
+    if (!tbody) {
+        console.error('attendanceBody element not found!');
         return;
     }
 
-    emptyState.style.display = 'none';
+    if (currentState.attendanceRecords.length === 0) {
+        tbody.innerHTML = '';
+        if (emptyState) emptyState.style.display = 'block';
+        console.log('No records to display');
+        return;
+    }
 
-    tbody.innerHTML = currentState.attendanceRecords.map(record => `
-    <tr>
-      <td>
-        <strong>${record.userName}</strong>
-        ${record.photo ? '<span class="security-indicator">📸</span>' : ''}
-        ${record.location ? '<span class="security-indicator">📍</span>' : ''}
-      </td>
-      <td>${record.date}</td>
-      <td>${record.clockIn}</td>
-      <td>${record.clockOut || '-'}</td>
-      <td>${formatBreakTime(record.restroomTime)}</td>
-      <td>${formatBreakTime(record.restTime)}</td>
-      <td class="duration ${record.duration ? 'complete' : 'incomplete'}">
-        ${record.duration || 'กำลังทำงาน...'}
-      </td>
-    </tr>
-  `).join('');
+    if (emptyState) emptyState.style.display = 'none';
+
+    tbody.innerHTML = currentState.attendanceRecords.map(record => {
+        const inOut = `${record.clockIn}${record.clockOut ? ' → ' + record.clockOut : ' → ...'}`;
+        const breaks = `${formatBreakTime(record.restroomTime)} / ${formatBreakTime(record.restTime)}`;
+        const project = record.project || 'General Work';
+
+        return `
+        <tr>
+            <td>
+                <strong>${record.userName}</strong>
+                ${record.photo ? '<span class="security-indicator" title="Photo Verified">📸</span>' : ''}
+                ${record.location ? '<span class="security-indicator" title="GPS Verified">📍</span>' : ''}
+                ${record.isLate ? '<span class="late-badge">สาย</span>' : ''}
+            </td>
+            <td>${record.date}</td>
+            <td>${inOut}</td>
+            <td>${breaks}</td>
+            <td>${project}</td>
+            <td class="duration ${record.duration ? 'complete' : 'incomplete'}">
+                ${record.duration || 'กำลังทำงาน...'}
+            </td>
+            <td>
+                ${record.photo ? `<button class="btn-icon" onclick="viewPhoto('${record.id}')" title="View Photo">👁️</button>` : ''}
+                ${record.location ? `<button class="btn-icon" onclick="viewLocation('${record.id}')" title="View Location">🗺️</button>` : ''}
+            </td>
+        </tr>
+        `;
+    }).join('');
+
+    console.log('Table rendered with', currentState.attendanceRecords.length, 'records');
 }
 
 // Export to Excel
